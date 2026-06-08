@@ -1,0 +1,10 @@
+{
+  "name": "ecosync",
+  "version": "1.0.0",
+  "description": "EcoSync - Carbon Footprint Tracker & Smart Assistant",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {}
+}

@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="EcoSync: Track, analyze, and reduce your carbon footprint with our smart assistant and interactive dashboard.">
+    <title>EcoSync - Carbon Footprint Tracker & Assistant</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-background"></div>
+    
+    <div class="app-container">
+        <!-- Sidebar / Header -->
+        <header class="app-header">
+            <div class="logo">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="logo-icon">
+                    <path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12A10 10 0 0 1 12 2z"/>
+                    <path d="M12 6a6 6 0 0 1 6 6c0 3.314-2.686 6-6 6S6 15.314 6 12a6 6 0 0 1 6-6z"/>
+                    <path d="M12 10a2 2 0 1 1 0 4 2 2 0 0 1 0-4z" class="logo-dot"/>
+                </svg>
+                <span class="logo-text">EcoSync</span>
+            </div>
+            
+            <nav class="app-nav">
+                <button class="nav-btn active" data-tab="dashboard">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-btn" data-tab="tracker">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                    <span>Log Habits</span>
+                </button>
+                <button class="nav-btn" data-tab="challenges">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                    <span>Challenges</span>
+                    <span class="badge-count" id="pending-challenges-badge">3</span>
+                </button>
+                <button class="nav-btn" data-tab="assistant">
+                    <div class="assistant-nav-indicator"></div>
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    <span>EcoBot AI</span>
+                </button>
+            </nav>
+
+            <div class="user-summary">
+                <div class="points-display">
+                    <span class="points-label">EcoPoints</span>
+                    <span class="points-value" id="header-points">0</span>
+                </div>
+                <div class="user-badge-mini" id="header-badge">Eco Seed</div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- TAB 1: DASHBOARD -->
+            <section class="tab-content active" id="tab-dashboard">
+                <div class="dashboard-grid">
+                    
+                    <!-- Left: Carbon Footprint Summary -->
+                    <div class="card card-hero glass">
+                        <div class="card-header">
+                            <h2>Your Carbon Footprint</h2>
+                            <div class="region-selector-container">
+                                <label for="region-select">Region:</label>
+                                <select id="region-select">
+                                    <option value="us">United States (High)</option>
+                                    <option value="eu">Europe (Medium)</option>
+                                    <option value="in">India (Low)</option>
+                                    <option value="global" selected>Global Average</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="carbon-hero-content">
+                            <div class="main-metric">
+                                <span class="metric-number" id="dashboard-total-co2">0.0</span>
+                                <div class="metric-unit">
+                                    <span class="unit-main">tons CO2e</span>
+                                    <span class="unit-sub">per year</span>
+                                </div>
+                            </div>
+                            
+                            <div class="comparison-bar-container">
+                                <div class="comparison-info">
+                                    <span>Comparison to Region Average</span>
+                                    <span class="comparison-percent" id="comparison-text">Evaluating...</span>
+                                </div>
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill" id="comparison-fill" style="width: 0%"></div>
+                                    <div class="progress-bar-marker" id="target-marker" style="left: 60%">
+                                        <span class="marker-label">Target (60%)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-stats-grid">
+                            <div class="stat-box">
+                                <span class="stat-label">Active Challenges</span>
+                                <span class="stat-value" id="dashboard-active-challenges">0</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">Points Earned</span>
+                                <span class="stat-value" id="dashboard-points">0</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">Reduction Impact</span>
+                                <span class="stat-value" id="dashboard-reduction">0 kg</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Visual Breakdown Chart -->
+                    <div class="card glass">
+                        <div class="card-header">
+                            <h3>Emissions Breakdown</h3>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-wrapper">
+                                <svg class="doughnut-chart" id="svg-doughnut" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="var(--bg-card)" stroke-width="12"></circle>
+                                    <!-- Dynamic segments will be inserted here by JS -->
+                                </svg>
+                                <div class="chart-overlay">
+                                    <span class="overlay-value" id="chart-overlay-value">0%</span>
+                                    <span class="overlay-label">Tracked</span>
+                                </div>
+                            </div>
+                            <div class="chart-legend" id="chart-legend">
+                                <!-- Legend items dynamically generated -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Left: Smart Personalized Insights -->
+                    <div class="card card-full glass grid-col-2">
+                        <div class="card-header">
+                            <h3 class="flex-center">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--primary)" stroke-width="2" class="margin-right-sm"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 14 18.469V19a2 2 0 0 1-2 2h0a2 2 0 0 1-2-2v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                                EcoBot's Smart Insights
+                            </h3>
+                            <button class="btn btn-secondary btn-sm" id="btn-refresh-insights">Recalculate</button>
+                        </div>
+                        <div class="insights-container" id="insights-panel">
+                            <!-- Dynamically loaded insights -->
+                            <div class="empty-state">
+                                <p>No insights generated yet. Please enter your carbon habit logs or complete the EcoBot Onboarding Quiz to get personalized reduction strategies.</p>
+                                <button class="btn btn-primary" onclick="switchTab('tracker')">Set Up Profile</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: ACTIVITY TRACKER -->
+            <section class="tab-content" id="tab-tracker">
+                <div class="tracker-layout">
+                    <!-- Sidebar for Category Tabs -->
+                    <div class="tracker-sidebar">
+                        <button class="tracker-cat-btn active" data-category="transport">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+                            <span>Transportation</span>
+                        </button>
+                        <button class="tracker-cat-btn" data-category="energy">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                            <span>Home Energy</span>
+                        </button>
+                        <button class="tracker-cat-btn" data-category="food">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                            <span>Diet & Food</span>
+                        </button>
+                        <button class="tracker-cat-btn" data-category="waste">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
+                            <span>Habits & Waste</span>
+                        </button>
+                    </div>
+
+                    <!-- Category Content -->
+                    <div class="tracker-content card glass">
+                        <!-- Transportation Form -->
+                        <div class="tracker-form-section active" id="form-transport">
+                            <h3>Transportation Habits</h3>
+                            <p class="section-desc">Vehicles, public transit, and flight habits drive the majority of personal carbon emissions.</p>
+                            
+                            <div class="form-group">
+                                <label>Do you drive a personal vehicle?</label>
+                                <div class="toggle-switch-container">
+                                    <label class="switch">
+                                        <input type="checkbox" id="owns-vehicle" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                    <span id="vehicle-toggle-text">Yes, I drive a car</span>
+                                </div>
+                            </div>
+
+                            <div id="vehicle-details-container">
+                                <div class="form-grid-2">
+                                    <div class="form-group">
+                                        <label for="vehicle-type">Vehicle Type</label>
+                                        <select id="vehicle-type">
+                                            <option value="suv">SUV / Large Vehicle</option>
+                                            <option value="sedan" selected>Medium Sedan</option>
+                                            <option value="compact">Compact / Small Car</option>
+                                            <option value="motorcycle">Motorcycle</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="fuel-type">Fuel Type</label>
+                                        <select id="fuel-type">
+                                            <option value="petrol" selected>Petrol (Gasoline)</option>
+                                            <option value="diesel">Diesel</option>
+                                            <option value="hybrid">Hybrid</option>
+                                            <option value="electric">Electric (EV)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="car-distance">Distance Driven (Weekly)</label>
+                                    <div class="range-slider-wrapper">
+                                        <input type="range" id="car-distance" min="0" max="500" value="100" class="input-slider">
+                                        <div class="slider-values">
+                                            <span class="value-display" id="car-distance-val">100 km</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="divider"></div>
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label for="public-transit">Public Transit (Weekly Hours)</label>
+                                    <div class="range-slider-wrapper">
+                                        <input type="range" id="public-transit" min="0" max="40" value="2" class="input-slider">
+                                        <div class="slider-values">
+                                            <span class="value-display" id="public-transit-val">2 hours</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="flights">Flights Taken (Per Year)</label>
+                                    <div class="counter-input">
+                                        <button class="btn btn-icon" type="button" onclick="adjustCounter('flights', -1)">-</button>
+                                        <input type="number" id="flights" value="1" min="0" max="50">
+                                        <button class="btn btn-icon" type="button" onclick="adjustCounter('flights', 1)">+</button>
+                                    </div>
+                                    <span class="input-subtext">Includes short and long haul flights.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Home Energy Form -->
+                        <div class="tracker-form-section" id="form-energy">
+                            <h3>Household Energy</h3>
+                            <p class="section-desc">Utility usage accounts for heating, cooling, and powering your home appliances.</p>
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label for="electricity">Monthly Electricity Bill</label>
+                                    <div class="input-unit-wrapper">
+                                        <span class="prefix-unit">$</span>
+                                        <input type="number" id="electricity" value="80" min="0">
+                                    </div>
+                                    <span class="input-subtext">Estimated at ~0.15$ per kWh if kWh is unknown</span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="gas">Monthly Gas Bill</label>
+                                    <div class="input-unit-wrapper">
+                                        <span class="prefix-unit">$</span>
+                                        <input type="number" id="gas" value="40" min="0">
+                                    </div>
+                                    <span class="input-subtext">Natural gas usage in therms/units</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="clean-energy">Clean / Green Energy Percentage</label>
+                                <div class="range-slider-wrapper">
+                                    <input type="range" id="clean-energy" min="0" max="100" value="0" class="input-slider">
+                                    <div class="slider-values">
+                                        <span class="value-display" id="clean-energy-val">0% green power</span>
+                                    </div>
+                                </div>
+                                <span class="input-subtext">Select 100% if you subscribe to a community solar plan or have solar panels.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="house-members">Household Members (Co-residents)</label>
+                                <div class="counter-input">
+                                    <button class="btn btn-icon" type="button" onclick="adjustCounter('house-members', -1)">-</button>
+                                    <input type="number" id="house-members" value="2" min="1" max="15">
+                                    <button class="btn btn-icon" type="button" onclick="adjustCounter('house-members', 1)">+</button>
+                                </div>
+                                <span class="input-subtext">Emissions are divided across members.</span>
+                            </div>
+                        </div>
+
+                        <!-- Food Form -->
+                        <div class="tracker-form-section" id="form-food">
+                            <h3>Diet & Food Consumption</h3>
+                            <p class="section-desc">Different dietary habits carry highly varied carbon impacts (e.g. meat vs plant-based).</p>
+
+                            <div class="form-group">
+                                <label for="diet-type">Diet Description</label>
+                                <select id="diet-type">
+                                    <option value="heavy-meat">Heavy Meat Eater (Frequent beef/pork/lamb)</option>
+                                    <option value="medium-meat" selected>Average Meat Eater (Balanced diet)</option>
+                                    <option value="low-meat">Low Meat / Pescatarian (Mostly chicken, fish, vegetarian)</option>
+                                    <option value="vegetarian">Vegetarian (No meat/fish, consumes dairy/eggs)</option>
+                                    <option value="vegan">Vegan (Entirely plant-based)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="food-waste">Food Waste Level</label>
+                                <div class="range-slider-wrapper">
+                                    <input type="range" id="food-waste" min="0" max="100" value="20" class="input-slider">
+                                    <div class="slider-values">
+                                        <span class="value-display" id="food-waste-val">20% wasted</span>
+                                    </div>
+                                </div>
+                                <span class="input-subtext">Percentage of purchased food that gets thrown out.</span>
+                            </div>
+                        </div>
+
+                        <!-- Habits & Waste Form -->
+                        <div class="tracker-form-section" id="form-waste">
+                            <h3>Consumer Habits & Recycling</h3>
+                            <p class="section-desc">Purchasing electronics, clothing, and recycling efficiency influences indirect emissions.</p>
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label for="clothing-purchases">Clothing Purchases (New items/month)</label>
+                                    <div class="counter-input">
+                                        <button class="btn btn-icon" type="button" onclick="adjustCounter('clothing-purchases', -1)">-</button>
+                                        <input type="number" id="clothing-purchases" value="2" min="0" max="100">
+                                        <button class="btn btn-icon" type="button" onclick="adjustCounter('clothing-purchases', 1)">+</button>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="electronics-purchases">New Electronics (Items/year)</label>
+                                    <div class="counter-input">
+                                        <button class="btn btn-icon" type="button" onclick="adjustCounter('electronics-purchases', -1)">-</button>
+                                        <input type="number" id="electronics-purchases" value="1" min="0" max="20">
+                                        <button class="btn btn-icon" type="button" onclick="adjustCounter('electronics-purchases', 1)">+</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Recycling Habits (Check what you regularly recycle)</label>
+                                <div class="checkbox-grid">
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" id="recycle-paper" checked>
+                                        <span class="checkmark"></span>
+                                        Paper / Cardboard
+                                    </label>
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" id="recycle-plastic" checked>
+                                        <span class="checkmark"></span>
+                                        Plastics
+                                    </label>
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" id="recycle-glass">
+                                        <span class="checkmark"></span>
+                                        Glass
+                                    </label>
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" id="recycle-metal">
+                                        <span class="checkmark"></span>
+                                        Metals / Cans
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="tracker-actions">
+                            <button class="btn btn-primary" id="btn-save-habits">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="margin-right-sm"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                                Save & Recalculate
+                            </button>
+                            <span class="save-status" id="save-status-msg"></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: CHALLENGES -->
+            <section class="tab-content" id="tab-challenges">
+                <div class="challenges-layout">
+                    <!-- Left Column: Challenges -->
+                    <div class="challenges-section">
+                        <div class="section-title-bar">
+                            <h3>Eco-Challenges</h3>
+                            <span class="badge" id="points-total-badge">0 Points</span>
+                        </div>
+                        <p class="section-desc">Commit to these simple habits to see your carbon impact decrease and unlock new status levels.</p>
+
+                        <div class="challenges-list" id="challenges-container">
+                            <!-- Injected dynamically by app.js -->
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Badges & Rewards -->
+                    <div class="badges-section card glass">
+                        <h3>Your Achievements</h3>
+                        <p class="section-desc">Earn badges as you accumulate EcoPoints from logging clean habits and completing challenges.</p>
+
+                        <div class="badges-grid" id="badges-container">
+                            <!-- Injected dynamically by app.js -->
+                        </div>
+
+                        <div class="points-progress-container">
+                            <div class="progress-details">
+                                <span id="current-rank-label">Rank: Eco Seed</span>
+                                <span id="next-rank-points">Need 100 points for next rank</span>
+                            </div>
+                            <div class="points-progress-bar-bg">
+                                <div class="points-progress-bar-fill" id="points-progress-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: ECOBOT SMART ASSISTANT -->
+            <section class="tab-content" id="tab-assistant">
+                <div class="assistant-layout card glass">
+                    <div class="assistant-header">
+                        <div class="assistant-avatar">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--primary)" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M12 2v3M8 5h8M8 11V9a4 4 0 0 1 8 0v2"/></svg>
+                        </div>
+                        <div class="assistant-info">
+                            <h4>EcoBot</h4>
+                            <span class="assistant-status">Active • Ready to Help</span>
+                        </div>
+                        <button class="btn btn-secondary btn-sm" id="btn-clear-chat">Clear History</button>
+                    </div>
+
+                    <!-- Chat Log -->
+                    <div class="chat-container-scroll" id="chat-messages">
+                        <!-- Message templates inserted here by JS -->
+                    </div>
+
+                    <!-- Typing Indicator -->
+                    <div class="chat-typing" id="chat-typing-indicator" style="display: none;">
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                    </div>
+
+                    <!-- Suggested Prompts Chips -->
+                    <div class="chat-suggestion-chips" id="suggestion-chips">
+                        <button class="chip" onclick="sendSuggestion('Start Carbon Onboarding Quiz 📝')">Start Onboarding Quiz 📝</button>
+                        <button class="chip" onclick="sendSuggestion('Analyze my carbon footprint 📊')">Analyze my footprint 📊</button>
+                        <button class="chip" onclick="sendSuggestion('Log carbon savings 🚲')">Log carbon savings 🚲</button>
+                        <button class="chip" onclick="sendSuggestion('Give me quick eco tips 💡')">Give me quick eco tips 💡</button>
+                    </div>
+
+                    <!-- Input Bar -->
+                    <form class="chat-input-bar" id="chat-form">
+                        <input type="text" id="chat-input" placeholder="Ask EcoBot anything about your footprint..." autocomplete="off">
+                        <button type="submit" class="btn btn-primary" id="btn-send-message">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        </button>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- UI Overlay for interactive quiz triggers -->
+    <div id="toast-notification" class="toast-container" style="display: none;">
+        <span class="toast-msg" id="toast-message">Challenge logged! +10 Points</span>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
