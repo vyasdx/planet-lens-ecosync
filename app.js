@@ -31,6 +31,11 @@ let state = {
     completedChallenges: [],
     chatHistory: [],
     region: 'global',
+    offsetAmount: 0, // 0-100% simulated offset
+    triviaState: {
+        active: false,
+        questionIndex: 0
+    },
     quizState: {
         active: false,
         currentStep: 0,
@@ -173,6 +178,23 @@ document.addEventListener('DOMContentLoaded', () => {
     setupTabNavigation();
     setupTrackerSliders();
     setupSelectors();
+    
+    // Attach Offset Simulator listener
+    const offsetSlider = document.getElementById('offset-simulate-slider');
+    if (offsetSlider) {
+        offsetSlider.value = state.offsetAmount || 0;
+        document.getElementById('offset-simulate-val').textContent = (state.offsetAmount || 0) + '% offsetted';
+        document.getElementById('offset-points-badge').textContent = `+${Math.round((state.offsetAmount || 0) / 2)} Points`;
+        
+        offsetSlider.addEventListener('input', (e) => {
+            state.offsetAmount = parseFloat(e.target.value) || 0;
+            document.getElementById('offset-simulate-val').textContent = state.offsetAmount + '% offsetted';
+            document.getElementById('offset-points-badge').textContent = `+${Math.round(state.offsetAmount / 2)} Points`;
+            saveState();
+            renderAll();
+        });
+    }
+
     renderAll();
     
     // EcoBot greeting
@@ -180,7 +202,8 @@ document.addEventListener('DOMContentLoaded', () => {
         addBotMessage("Hi! I'm EcoBot, your smart carbon assistant. 🌱\n\nI can help you understand your footprint, suggest personalized reductions, and log daily habits directly from our chat. \n\nWhere would you like to start?", [
             { text: "Take Onboarding Quiz 📝", action: "start_quiz" },
             { text: "Quick Footprint Check 📊", action: "analyze" },
-            { text: "Give me eco tips 💡", action: "tips" }
+            { text: "Give me eco tips 💡", action: "tips" },
+            { text: "Play Eco-Trivia Game 🧠", action: "start_trivia" }
         ]);
     } else {
         restoreChat();
@@ -207,6 +230,8 @@ function loadState() {
             if (!state.habits) state.habits = {};
             if (!state.completedChallenges) state.completedChallenges = [];
             if (!state.chatHistory) state.chatHistory = [];
+            if (state.offsetAmount === undefined) state.offsetAmount = 0;
+            if (!state.triviaState) state.triviaState = { active: false, questionIndex: 0 };
         } catch (e) {
             console.error("Failed to parse local state", e);
         }
@@ -490,7 +515,9 @@ function calculateEmissions() {
         }
     });
 
-    const totalProjected = Math.max(0.1, totalRaw - totalCompletedChallengeReductions);
+    // Subtract simulated carbon offset
+    const offsetTons = totalRaw * ((state.offsetAmount || 0) / 100);
+    const totalProjected = Math.max(0.0, totalRaw - totalCompletedChallengeReductions - offsetTons);
 
     return {
         transport: transportTons,
@@ -498,7 +525,7 @@ function calculateEmissions() {
         diet: dietTons,
         waste: wasteTons,
         totalRaw: totalRaw,
-        reductions: totalCompletedChallengeReductions,
+        reductions: totalCompletedChallengeReductions + offsetTons,
         totalProjected: totalProjected
     };
 }
@@ -510,6 +537,9 @@ function renderAll() {
     // Calculate values
     const emissions = calculateEmissions();
     
+    // Compute total points including offsets
+    const totalPointsDisplay = state.points + Math.round((state.offsetAmount || 0) / 2);
+
     // Update Dashboard Metrics
     const totalCo2Span = document.getElementById('dashboard-total-co2');
     if (totalCo2Span) {
@@ -524,11 +554,11 @@ function renderAll() {
     }
     
     // Points stats
-    document.getElementById('header-points').textContent = state.points;
+    document.getElementById('header-points').textContent = totalPointsDisplay;
     const ptsValueDashboard = document.getElementById('dashboard-points');
-    if (ptsValueDashboard) ptsValueDashboard.textContent = state.points;
+    if (ptsValueDashboard) ptsValueDashboard.textContent = totalPointsDisplay;
     const ptsBadgeTotal = document.getElementById('points-total-badge');
-    if (ptsBadgeTotal) ptsBadgeTotal.textContent = `${state.points} Points`;
+    if (ptsBadgeTotal) ptsBadgeTotal.textContent = `${totalPointsDisplay} Points`;
     
     // Reduction Impact stat
     const reductionSpan = document.getElementById('dashboard-reduction');
@@ -566,10 +596,16 @@ function renderAll() {
     }
 
     // Update User Badges and Rank Progress
-    updateRankAndBadges();
+    updateRankAndBadges(totalPointsDisplay);
 
     // Render SVG Doughnut Chart
     renderDoughnutChart(emissions);
+
+    // Render Historical Trend Chart
+    renderHistoricalChart(emissions);
+
+    // Render Offset Trees status
+    renderOffsetCard(emissions);
 
     // Render Challenges
     renderChallengesList();
@@ -581,13 +617,15 @@ function renderAll() {
     generateInsights(emissions);
 }
 
-function updateRankAndBadges() {
+function updateRankAndBadges(displayPoints) {
     let currentRank = RANKS[0];
     let nextRank = RANKS[1];
     
+    const activePoints = typeof displayPoints === 'number' ? displayPoints : state.points;
+    
     // Find highest rank unlocked
     for (let i = 0; i < RANKS.length; i++) {
-        if (state.points >= RANKS[i].threshold) {
+        if (activePoints >= RANKS[i].threshold) {
             currentRank = RANKS[i];
             nextRank = RANKS[i+1] || null;
         }
@@ -706,6 +744,53 @@ function renderDoughnutChart(emissions) {
     const activeReductionPct = emissions.totalRaw > 0 ? (1 - (emissions.reductions / emissions.totalRaw)) * 100 : 100;
     overlayVal.textContent = `${Math.max(0, Math.round(activeReductionPct))}%`;
     overlayVal.style.color = 'var(--text-main)';
+}
+
+function renderHistoricalChart(emissions) {
+    const container = document.getElementById('trend-bar-chart');
+    if (!container) return;
+
+    // Last 3 weeks are pre-populated historical entries to show data trend
+    const w1 = 12.4;
+    const w2 = 10.8;
+    const w3 = 9.2;
+    // Current projected footprint
+    const w4 = emissions.totalProjected;
+    
+    const weeks = [
+        { label: 'Wk 1', val: w1 },
+        { label: 'Wk 2', val: w2 },
+        { label: 'Wk 3', val: w3 },
+        { label: 'Current', val: w4, isCurrent: true }
+    ];
+
+    const maxVal = Math.max(w1, w2, w3, w4, 15.0); // Baseline scale limit
+
+    let html = '';
+    weeks.forEach(w => {
+        const pctHeight = Math.max(5, (w.val / maxVal) * 100);
+        
+        html += `
+            <div class="trend-bar-container">
+                <div class="trend-bar" style="height: ${pctHeight}%; ${w.isCurrent ? '' : 'background: rgba(255, 255, 255, 0.08); border: 1px solid var(--border-color); opacity: 0.7;'}">
+                    <span class="trend-bar-val">${w.val.toFixed(1)}t</span>
+                </div>
+                <span class="trend-bar-label">${w.label}</span>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function renderOffsetCard(emissions) {
+    const offsetTrees = document.getElementById('offset-trees');
+    if (!offsetTrees) return;
+
+    // 1 mature tree absorbs about 22 kg of CO2 per year = 0.022 tons.
+    // Trees needed = emissions.totalProjected / 0.022
+    const treesNeeded = Math.round(emissions.totalProjected / 0.022);
+    offsetTrees.textContent = treesNeeded.toLocaleString();
 }
 
 // ----------------- CHALLENGES ENGINE -----------------
@@ -1115,9 +1200,21 @@ function scrollToBottom() {
 function processBotResponse(userInput) {
     const text = userInput.toLowerCase();
     
+    // Check if trivia game is active
+    if (state.triviaState.active) {
+        handleTriviaAnswer(userInput);
+        return;
+    }
+    
     // Check if onboarding quiz is active
     if (state.quizState.active) {
         handleQuizProgress(userInput);
+        return;
+    }
+
+    // Check Trivia trigger
+    if (text.includes('game') || text.includes('trivia') || text.includes('play')) {
+        startTriviaGame();
         return;
     }
 
@@ -1398,6 +1495,12 @@ function handleChatAction(action, param) {
         if (action === "start_quiz") {
             startOnboardingQuiz();
         } 
+        else if (action === "start_trivia") {
+            startTriviaGame();
+        }
+        else if (action === "trivia_ans") {
+            handleTriviaAnswer(param);
+        }
         else if (action === "analyze") {
             processBotResponse("analyze footprint");
         } 
@@ -1477,4 +1580,85 @@ function escapeHTML(str) {
             '"': '&quot;'
         }[tag] || tag)
     );
+}
+
+// ----------------- TRIVIA GAME ENGINE -----------------
+const TRIVIA_QUESTIONS = [
+    {
+        q: "What percentage of global greenhouse gas emissions come from food production?",
+        options: ["A) 10%", "B) 26%", "C) 50%"],
+        correct: "b",
+        explain: "Food production accounts for about 26% of global emissions, with livestock representing a large portion of that."
+    },
+    {
+        q: "Which transit method has the lowest carbon footprint per passenger-kilometer?",
+        options: ["A) Electric Train", "B) Electric Car (EV)", "C) Diesel Bus"],
+        correct: "a",
+        explain: "Electric rail/train transit is extremely energy-efficient and has the lowest emissions per passenger km."
+    },
+    {
+        q: "How much carbon dioxide does an average mature tree absorb per year?",
+        options: ["A) 5 kg", "B) 22 kg", "C) 100 kg"],
+        correct: "b",
+        explain: "A mature tree absorbs roughly 22 kg (48 lbs) of carbon dioxide annually from the atmosphere."
+    }
+];
+
+function startTriviaGame() {
+    state.triviaState.active = true;
+    state.triviaState.questionIndex = 0;
+    saveState();
+    askTriviaQuestion();
+}
+
+function askTriviaQuestion() {
+    const qIndex = state.triviaState.questionIndex;
+    const qData = TRIVIA_QUESTIONS[qIndex];
+    
+    addBotMessage(`🌱 **Eco-Trivia Question ${qIndex + 1}/3**:\n\n${qData.q}`, [
+        { text: qData.options[0], action: "trivia_ans", param: "a" },
+        { text: qData.options[1], action: "trivia_ans", param: "b" },
+        { text: qData.options[2], action: "trivia_ans", param: "c" }
+    ]);
+}
+
+function handleTriviaAnswer(userInput) {
+    const qIndex = state.triviaState.questionIndex;
+    const qData = TRIVIA_QUESTIONS[qIndex];
+    
+    // Parse choice (a, b, c) from text
+    let ans = userInput.toLowerCase().trim();
+    if (ans.startsWith('a') || ans.includes('10%') || ans.includes('train')) ans = 'a';
+    else if (ans.startsWith('b') || ans.includes('26%') || ans.includes('22')) ans = 'b';
+    else if (ans.startsWith('c') || ans.includes('50%') || ans.includes('bus') || ans.includes('100')) ans = 'c';
+    else {
+        // Fallback to what was passed or a guess
+        ans = ans.charAt(0);
+    }
+
+    if (ans === qData.correct) {
+        state.points += 20;
+        saveState();
+        renderAll();
+        showToast("Correct! +20 EcoPoints! 🧠");
+        addBotMessage(`✨ **Correct!**\n\n${qData.explain}\n\nYou earned **+20 EcoPoints**!`);
+    } else {
+        addBotMessage(`❌ **Incorrect.** The correct answer was **${qData.correct.toUpperCase()}**.\n\n*Fact: ${qData.explain}*`);
+    }
+
+    setTimeout(() => {
+        state.triviaState.questionIndex++;
+        if (state.triviaState.questionIndex < TRIVIA_QUESTIONS.length) {
+            saveState();
+            askTriviaQuestion();
+        } else {
+            state.triviaState.active = false;
+            state.triviaState.questionIndex = 0;
+            saveState();
+            addBotMessage("🎉 **Trivia Game Completed!** Thanks for playing. Check out your points and rank on the dashboard! 🌍🌱", [
+                { text: "View Dashboard 📊", action: "open_dashboard" },
+                { text: "Suggest eco tips 💡", action: "tips" }
+            ]);
+        }
+    }, 3000);
 }

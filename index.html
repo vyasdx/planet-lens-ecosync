@@ -138,6 +138,44 @@
                         </div>
                     </div>
 
+                    <!-- Left Row 2: Historical Trend -->
+                    <div class="card glass">
+                        <div class="card-header">
+                            <h3>Historical Trend</h3>
+                            <span class="input-subtext">Last 4 Weeks (tons CO2e)</span>
+                        </div>
+                        <div class="trend-chart-wrapper">
+                            <div class="trend-bar-chart" id="trend-bar-chart">
+                                <!-- Injected dynamically by app.js -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Row 2: Offset Progress -->
+                    <div class="card glass">
+                        <div class="card-header">
+                            <h3>Net-Zero Offset</h3>
+                            <span class="badge" id="offset-points-badge">+0 Points</span>
+                        </div>
+                        <div class="offset-content">
+                            <div class="offset-stat">
+                                <span class="offset-number" id="offset-trees">0</span>
+                                <span class="offset-label">Mature trees required to offset your annual footprint</span>
+                            </div>
+                            <div class="divider"></div>
+                            <div class="offset-simulator">
+                                <label for="offset-simulate-slider">Simulate Carbon Offsetting:</label>
+                                <div class="range-slider-wrapper">
+                                    <input type="range" id="offset-simulate-slider" min="0" max="100" value="0" class="input-slider">
+                                    <div class="slider-values">
+                                        <span class="value-display" id="offset-simulate-val">0% offsetted</span>
+                                    </div>
+                                </div>
+                                <span class="input-subtext">Simulates planting trees or funding clean energy offsets.</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Bottom Left: Smart Personalized Insights -->
                     <div class="card card-full glass grid-col-2">
                         <div class="card-header">

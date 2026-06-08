@@ -1632,3 +1632,101 @@ select:focus, input[type="number"]:focus, input[type="text"]:focus {
         max-width: 90%;
     }
 }
+
+/* --- HISTORICAL TREND BAR CHART & OFFSET CARDS --- */
+.trend-chart-wrapper {
+    height: 180px;
+    display: flex;
+    align-items: flex-end;
+    padding-top: 1rem;
+    width: 100%;
+}
+
+.trend-bar-chart {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    width: 100%;
+    height: 100%;
+    gap: 0.5rem;
+}
+
+.trend-bar-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-grow: 1;
+    height: 100%;
+    justify-content: flex-end;
+}
+
+.trend-bar {
+    width: 100%;
+    max-width: 40px;
+    background: linear-gradient(180deg, var(--primary-light) 0%, var(--primary) 100%);
+    border-radius: 6px 6px 0 0;
+    transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 10px var(--primary-glow);
+    position: relative;
+    cursor: pointer;
+}
+
+.trend-bar:hover {
+    background: linear-gradient(180deg, #34d399 0%, #059669 100%);
+    box-shadow: 0 0 15px rgba(52, 211, 153, 0.4);
+}
+
+.trend-bar-val {
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-main);
+    white-space: nowrap;
+}
+
+.trend-bar-label {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* Offset Card Styles */
+.offset-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 180px;
+    justify-content: space-between;
+}
+
+.offset-stat {
+    text-align: center;
+    padding: 0.25rem 0;
+}
+
+.offset-number {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: var(--primary-light);
+    display: block;
+    text-shadow: 0 0 15px var(--primary-glow);
+    line-height: 1.1;
+    margin-bottom: 0.25rem;
+}
+
+.offset-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    display: block;
+    max-width: 280px;
+    margin: 0 auto;
+}
+
+.offset-simulator {
+    margin-top: auto;
+}
