@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="EcoSync: Track, analyze, and reduce your carbon footprint with our smart assistant and interactive dashboard.">
-    <title>EcoSync - Carbon Footprint Tracker & Assistant</title>
+    <meta name="description" content="EcoSync Lens: Planeteer Edition. A carbon-aware AI decision copilot with browser sensors and a reactive Gaia EcoWorld.">
+    <title>EcoSync Lens - Planeteer Carbon Copilot</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -23,29 +23,34 @@
                     <path d="M12 6a6 6 0 0 1 6 6c0 3.314-2.686 6-6 6S6 15.314 6 12a6 6 0 0 1 6-6z"/>
                     <path d="M12 10a2 2 0 1 1 0 4 2 2 0 0 1 0-4z" class="logo-dot"/>
                 </svg>
-                <span class="logo-text">EcoSync</span>
+                <span class="logo-text">EcoSync Lens</span>
             </div>
             
             <nav class="app-nav">
-                <button class="nav-btn active" data-tab="dashboard">
+                <button class="nav-btn active" data-tab="lens">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <span>Decision Lens</span>
+                </button>
+                <button class="nav-btn" data-tab="console">
                     <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                    <span>Dashboard</span>
-                </button>
-                <button class="nav-btn" data-tab="tracker">
-                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                    <span>Log Habits</span>
-                </button>
-                <button class="nav-btn" data-tab="challenges">
-                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
-                    <span>Challenges</span>
-                    <span class="badge-count" id="pending-challenges-badge">3</span>
+                    <span>Console Log</span>
                 </button>
                 <button class="nav-btn" data-tab="assistant">
                     <div class="assistant-nav-indicator"></div>
                     <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                    <span>EcoBot AI</span>
+                    <span>Gaia Terminal</span>
                 </button>
             </nav>
+
+            <!-- Audio Controller -->
+            <div class="audio-control-card">
+                <span class="audio-label">Retro Synth 8-Bit BGM</span>
+                <button class="btn btn-secondary btn-sm" id="btn-toggle-music">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" class="margin-right-sm icon-play"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" class="margin-right-sm icon-pause" style="display: none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                    <span id="music-btn-text">Play BGM</span>
+                </button>
+            </div>
 
             <div class="user-summary">
                 <div class="points-display">
@@ -58,14 +63,202 @@
 
         <!-- Main Content -->
         <main class="app-main">
-            <!-- TAB 1: DASHBOARD -->
-            <section class="tab-content active" id="tab-dashboard">
+            <!-- TAB 1: COPILOT LENS -->
+            <section class="tab-content active" id="tab-lens">
+                <div class="lens-layout">
+                    <!-- Left: Gaia's EcoWorld & Rings -->
+                    <div class="lens-left-column">
+                        <!-- Card 1: Gaia EcoWorld SVG -->
+                        <div class="card card-hero glass">
+                            <div class="card-header">
+                                <div>
+                                    <h2>Gaia's Living EcoWorld</h2>
+                                    <span class="input-subtext">Reacts dynamically to your choices</span>
+                                </div>
+                                <span class="badge" id="gaia-health-badge">Health: 20%</span>
+                            </div>
+                            
+                            <!-- Interactive SVG Landscape -->
+                            <div class="ecoworld-svg-container">
+                                <svg id="gaia-svg" viewBox="0 0 400 220" width="100%" height="100%">
+                                    <defs>
+                                        <!-- Sky Gradient -->
+                                        <linearGradient id="sky-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                            <stop offset="0%" class="sky-color-top" stop-color="#0f172a" />
+                                            <stop offset="100%" class="sky-color-bottom" stop-color="#1e293b" />
+                                        </linearGradient>
+                                        <filter id="glow-filter">
+                                            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                                            <feMerge>
+                                                <feMergeNode in="coloredBlur"/>
+                                                <feMergeNode in="SourceGraphic"/>
+                                            </feMerge>
+                                        </filter>
+                                    </defs>
+
+                                    <!-- Sky Backing -->
+                                    <rect width="400" height="220" fill="url(#sky-grad)" />
+
+                                    <!-- Smog Overlay Filter -->
+                                    <rect id="svg-smog" width="400" height="220" fill="#475569" opacity="0.6" style="transition: opacity 1.5s ease; pointer-events: none;" />
+
+                                    <!-- Sun / Moon -->
+                                    <circle id="svg-sun" cx="320" cy="50" r="18" fill="#fef08a" opacity="0.8" />
+
+                                    <!-- Clouds -->
+                                    <g id="svg-clouds" fill="#cbd5e1" opacity="0.4" style="transition: transform 1s ease;">
+                                        <path d="M 30,70 A 10,10 0 0,1 45,62 A 15,15 0 0,1 70,65 A 10,10 0 0,1 80,75 L 25,75 Z" class="cloud-1" />
+                                        <path d="M 210,50 A 8,8 0 0,1 222,44 A 12,12 0 0,1 242,46 A 8,8 0 0,1 250,54 L 205,54 Z" class="cloud-2" />
+                                    </g>
+
+                                    <!-- Mountains -->
+                                    <polygon points="0,170 80,100 160,170" fill="#1e293b" />
+                                    <polygon points="100,170 190,90 280,170" fill="#0f172a" />
+
+                                    <!-- Clean Blue / Murky River -->
+                                    <path id="svg-river" d="M 0,220 C 120,200 150,180 200,165 C 230,155 300,160 400,150 L 400,220 L 0,220 Z" fill="#334155" style="transition: fill 1.5s ease;" />
+
+                                    <!-- Hills / Ground -->
+                                    <path d="M 0,220 Q 150,150 400,180 L 400,220 L 0,220 Z" fill="#1b253b" />
+
+                                    <!-- Gaia Tree Trunk -->
+                                    <path d="M 270,180 Q 275,140 275,120 L 285,120 Q 285,140 290,180 Z" fill="#451a03" />
+
+                                    <!-- Gaia Tree Branches / Leaves (Grown via opacity / class transitions) -->
+                                    <g id="svg-foliage" style="transition: opacity 1.5s ease;" opacity="0.1">
+                                        <circle cx="280" cy="110" r="22" fill="#047857" opacity="0.85" />
+                                        <circle cx="265" cy="100" r="16" fill="#059669" opacity="0.9" />
+                                        <circle cx="295" cy="100" r="16" fill="#10b981" opacity="0.9" />
+                                        <!-- Blooming Flowers (unlocked at high health) -->
+                                        <g id="svg-flowers" opacity="0">
+                                            <circle cx="270" cy="105" r="3" fill="#f43f5e" />
+                                            <circle cx="290" cy="95" r="3" fill="#f43f5e" />
+                                            <circle cx="282" cy="115" r="3" fill="#f59e0b" />
+                                        </g>
+                                    </g>
+
+                                    <!-- Summoned Captain Planet Glow Ring Shield (Visible at Net Zero) -->
+                                    <circle id="svg-captain-glow" cx="280" cy="120" r="65" stroke="var(--primary)" stroke-width="2" stroke-dasharray="8 4" fill="transparent" opacity="0" filter="url(#glow-filter)" style="transition: opacity 2s ease;" />
+                                    <!-- Captain Planet Retro Silhouette Symbol -->
+                                    <g id="svg-captain-planet" opacity="0" transform="translate(130, 20) scale(0.65)" style="transition: opacity 2s ease;">
+                                        <circle cx="120" cy="80" r="28" fill="rgba(16, 185, 129, 0.15)" stroke="var(--primary)" stroke-width="1.5" />
+                                        <!-- Chest logo emblem representation -->
+                                        <path d="M 120,62 L 128,74 L 112,74 Z" fill="#34d399" />
+                                        <circle cx="120" cy="82" r="5" fill="#fef08a" />
+                                    </g>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Planeteer Rings Showcase -->
+                        <div class="card glass flex-column-center">
+                            <h3>Planeteer Elements Activated</h3>
+                            <p class="section-desc text-center">Unleash all five elements to summon Captain Planet and stabilize Gaia!</p>
+                            
+                            <div class="rings-grid">
+                                <!-- Ring 1: Earth -->
+                                <div class="ring-slot" id="ring-earth" data-element="earth">
+                                    <div class="ring-icon">🪨</div>
+                                    <span class="ring-name">Earth</span>
+                                    <span class="ring-glow-indicator"></span>
+                                </div>
+                                <!-- Ring 2: Fire -->
+                                <div class="ring-slot" id="ring-fire" data-element="fire">
+                                    <div class="ring-icon">🔥</div>
+                                    <span class="ring-name">Fire</span>
+                                    <span class="ring-glow-indicator"></span>
+                                </div>
+                                <!-- Ring 3: Wind -->
+                                <div class="ring-slot" id="ring-wind" data-element="wind">
+                                    <div class="ring-icon">💨</div>
+                                    <span class="ring-name">Wind</span>
+                                    <span class="ring-glow-indicator"></span>
+                                </div>
+                                <!-- Ring 4: Water -->
+                                <div class="ring-slot" id="ring-water" data-element="water">
+                                    <div class="ring-icon">💧</div>
+                                    <span class="ring-name">Water</span>
+                                    <span class="ring-glow-indicator"></span>
+                                </div>
+                                <!-- Ring 5: Heart -->
+                                <div class="ring-slot" id="ring-heart" data-element="heart">
+                                    <div class="ring-icon">❤️</div>
+                                    <span class="ring-name">Heart</span>
+                                    <span class="ring-glow-indicator"></span>
+                                </div>
+                            </div>
+                            
+                            <div class="summon-status-text" id="summon-alert">
+                                Planeteers: Earth, Fire, Wind, Water, Heart! Waiting for combined powers...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Proactive Decision Lenses -->
+                    <div class="lens-right-column">
+                        <div class="section-title-bar">
+                            <h3>AI Decision Lenses</h3>
+                            <span class="badge badge-glow">Active Copilot</span>
+                        </div>
+                        <p class="section-desc">EcoSync detects your daily decisions in real-time. Choose a lens below to test or verify a low-carbon choice before you act:</p>
+                        
+                        <div class="decision-lenses-grid">
+                            <!-- Card 1: Food Order -->
+                            <div class="decision-card glass hover-lift" onclick="openDecisionModal('food')">
+                                <div class="decision-icon-wrapper water-bg">🍔</div>
+                                <div class="decision-info">
+                                    <h4>Food Order Lens</h4>
+                                    <p>Scan lunch carts or menu items to check swap alerts.</p>
+                                    <span class="badge-element-tag water-badge">Water / Earth</span>
+                                </div>
+                                <div class="arrow-indicator">➔</div>
+                            </div>
+
+                            <!-- Card 2: Commute Router -->
+                            <div class="decision-card glass hover-lift" onclick="openDecisionModal('commute')">
+                                <div class="decision-icon-wrapper wind-bg">🚗</div>
+                                <div class="decision-info">
+                                    <h4>Commute Route Lens</h4>
+                                    <p>Find clean navigation swaps before driving.</p>
+                                    <span class="badge-element-tag wind-badge">Wind / Fire</span>
+                                </div>
+                                <div class="arrow-indicator">➔</div>
+                            </div>
+
+                            <!-- Card 3: Shopping Scanner -->
+                            <div class="decision-card glass hover-lift" onclick="openDecisionModal('shopping')">
+                                <div class="decision-icon-wrapper heart-bg">🛍️</div>
+                                <div class="decision-info">
+                                    <h4>Shopping Scanner</h4>
+                                    <p>Evaluate apparel or product carbon lifecycles.</p>
+                                    <span class="badge-element-tag heart-badge">Heart Element</span>
+                                </div>
+                                <div class="arrow-indicator">➔</div>
+                            </div>
+
+                            <!-- Card 4: Waste Classifier -->
+                            <div class="decision-card glass hover-lift" onclick="openDecisionModal('waste')">
+                                <div class="decision-icon-wrapper earth-bg">♻️</div>
+                                <div class="decision-info">
+                                    <h4>Waste Classifier</h4>
+                                    <p>Initiate camera scanner to sort recyclables.</p>
+                                    <span class="badge-element-tag earth-badge">Earth Element</span>
+                                </div>
+                                <div class="arrow-indicator">➔</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: CONSOLE LOG (REFLECTION & ANALYTICS) -->
+            <section class="tab-content" id="tab-console">
                 <div class="dashboard-grid">
                     
                     <!-- Left: Carbon Footprint Summary -->
                     <div class="card card-hero glass">
                         <div class="card-header">
-                            <h2>Your Carbon Footprint</h2>
+                            <h2>Your Carbon Footprint Console</h2>
                             <div class="region-selector-container">
                                 <label for="region-select">Region:</label>
                                 <select id="region-select">
@@ -102,15 +295,15 @@
 
                         <div class="dashboard-stats-grid">
                             <div class="stat-box">
-                                <span class="stat-label">Active Challenges</span>
+                                <span class="stat-label">Active Elements</span>
                                 <span class="stat-value" id="dashboard-active-challenges">0</span>
                             </div>
                             <div class="stat-box">
-                                <span class="stat-label">Points Earned</span>
+                                <span class="stat-label">EcoPoints</span>
                                 <span class="stat-value" id="dashboard-points">0</span>
                             </div>
                             <div class="stat-box">
-                                <span class="stat-label">Reduction Impact</span>
+                                <span class="stat-label">Offset Reduction</span>
                                 <span class="stat-value" id="dashboard-reduction">0 kg</span>
                             </div>
                         </div>
@@ -187,291 +380,34 @@
                         </div>
                         <div class="insights-container" id="insights-panel">
                             <!-- Dynamically loaded insights -->
-                            <div class="empty-state">
-                                <p>No insights generated yet. Please enter your carbon habit logs or complete the EcoBot Onboarding Quiz to get personalized reduction strategies.</p>
-                                <button class="btn btn-primary" onclick="switchTab('tracker')">Set Up Profile</button>
-                            </div>
                         </div>
                     </div>
                 </div>
-            </section>
 
-            <!-- TAB 2: ACTIVITY TRACKER -->
-            <section class="tab-content" id="tab-tracker">
-                <div class="tracker-layout">
-                    <!-- Sidebar for Category Tabs -->
-                    <div class="tracker-sidebar">
-                        <button class="tracker-cat-btn active" data-category="transport">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
-                            <span>Transportation</span>
-                        </button>
-                        <button class="tracker-cat-btn" data-category="energy">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                            <span>Home Energy</span>
-                        </button>
-                        <button class="tracker-cat-btn" data-category="food">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                            <span>Diet & Food</span>
-                        </button>
-                        <button class="tracker-cat-btn" data-category="waste">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
-                            <span>Habits & Waste</span>
-                        </button>
-                    </div>
-
-                    <!-- Category Content -->
-                    <div class="tracker-content card glass">
-                        <!-- Transportation Form -->
-                        <div class="tracker-form-section active" id="form-transport">
-                            <h3>Transportation Habits</h3>
-                            <p class="section-desc">Vehicles, public transit, and flight habits drive the majority of personal carbon emissions.</p>
-                            
-                            <div class="form-group">
-                                <label>Do you drive a personal vehicle?</label>
-                                <div class="toggle-switch-container">
-                                    <label class="switch">
-                                        <input type="checkbox" id="owns-vehicle" checked>
-                                        <span class="slider round"></span>
-                                    </label>
-                                    <span id="vehicle-toggle-text">Yes, I drive a car</span>
-                                </div>
-                            </div>
-
-                            <div id="vehicle-details-container">
-                                <div class="form-grid-2">
-                                    <div class="form-group">
-                                        <label for="vehicle-type">Vehicle Type</label>
-                                        <select id="vehicle-type">
-                                            <option value="suv">SUV / Large Vehicle</option>
-                                            <option value="sedan" selected>Medium Sedan</option>
-                                            <option value="compact">Compact / Small Car</option>
-                                            <option value="motorcycle">Motorcycle</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="fuel-type">Fuel Type</label>
-                                        <select id="fuel-type">
-                                            <option value="petrol" selected>Petrol (Gasoline)</option>
-                                            <option value="diesel">Diesel</option>
-                                            <option value="hybrid">Hybrid</option>
-                                            <option value="electric">Electric (EV)</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="car-distance">Distance Driven (Weekly)</label>
-                                    <div class="range-slider-wrapper">
-                                        <input type="range" id="car-distance" min="0" max="500" value="100" class="input-slider">
-                                        <div class="slider-values">
-                                            <span class="value-display" id="car-distance-val">100 km</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="divider"></div>
-
-                            <div class="form-grid-2">
-                                <div class="form-group">
-                                    <label for="public-transit">Public Transit (Weekly Hours)</label>
-                                    <div class="range-slider-wrapper">
-                                        <input type="range" id="public-transit" min="0" max="40" value="2" class="input-slider">
-                                        <div class="slider-values">
-                                            <span class="value-display" id="public-transit-val">2 hours</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="flights">Flights Taken (Per Year)</label>
-                                    <div class="counter-input">
-                                        <button class="btn btn-icon" type="button" onclick="adjustCounter('flights', -1)">-</button>
-                                        <input type="number" id="flights" value="1" min="0" max="50">
-                                        <button class="btn btn-icon" type="button" onclick="adjustCounter('flights', 1)">+</button>
-                                    </div>
-                                    <span class="input-subtext">Includes short and long haul flights.</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Home Energy Form -->
-                        <div class="tracker-form-section" id="form-energy">
-                            <h3>Household Energy</h3>
-                            <p class="section-desc">Utility usage accounts for heating, cooling, and powering your home appliances.</p>
-
-                            <div class="form-grid-2">
-                                <div class="form-group">
-                                    <label for="electricity">Monthly Electricity Bill</label>
-                                    <div class="input-unit-wrapper">
-                                        <span class="prefix-unit">$</span>
-                                        <input type="number" id="electricity" value="80" min="0">
-                                    </div>
-                                    <span class="input-subtext">Estimated at ~0.15$ per kWh if kWh is unknown</span>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="gas">Monthly Gas Bill</label>
-                                    <div class="input-unit-wrapper">
-                                        <span class="prefix-unit">$</span>
-                                        <input type="number" id="gas" value="40" min="0">
-                                    </div>
-                                    <span class="input-subtext">Natural gas usage in therms/units</span>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="clean-energy">Clean / Green Energy Percentage</label>
-                                <div class="range-slider-wrapper">
-                                    <input type="range" id="clean-energy" min="0" max="100" value="0" class="input-slider">
-                                    <div class="slider-values">
-                                        <span class="value-display" id="clean-energy-val">0% green power</span>
-                                    </div>
-                                </div>
-                                <span class="input-subtext">Select 100% if you subscribe to a community solar plan or have solar panels.</span>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="house-members">Household Members (Co-residents)</label>
-                                <div class="counter-input">
-                                    <button class="btn btn-icon" type="button" onclick="adjustCounter('house-members', -1)">-</button>
-                                    <input type="number" id="house-members" value="2" min="1" max="15">
-                                    <button class="btn btn-icon" type="button" onclick="adjustCounter('house-members', 1)">+</button>
-                                </div>
-                                <span class="input-subtext">Emissions are divided across members.</span>
-                            </div>
-                        </div>
-
-                        <!-- Food Form -->
-                        <div class="tracker-form-section" id="form-food">
-                            <h3>Diet & Food Consumption</h3>
-                            <p class="section-desc">Different dietary habits carry highly varied carbon impacts (e.g. meat vs plant-based).</p>
-
-                            <div class="form-group">
-                                <label for="diet-type">Diet Description</label>
-                                <select id="diet-type">
-                                    <option value="heavy-meat">Heavy Meat Eater (Frequent beef/pork/lamb)</option>
-                                    <option value="medium-meat" selected>Average Meat Eater (Balanced diet)</option>
-                                    <option value="low-meat">Low Meat / Pescatarian (Mostly chicken, fish, vegetarian)</option>
-                                    <option value="vegetarian">Vegetarian (No meat/fish, consumes dairy/eggs)</option>
-                                    <option value="vegan">Vegan (Entirely plant-based)</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="food-waste">Food Waste Level</label>
-                                <div class="range-slider-wrapper">
-                                    <input type="range" id="food-waste" min="0" max="100" value="20" class="input-slider">
-                                    <div class="slider-values">
-                                        <span class="value-display" id="food-waste-val">20% wasted</span>
-                                    </div>
-                                </div>
-                                <span class="input-subtext">Percentage of purchased food that gets thrown out.</span>
-                            </div>
-                        </div>
-
-                        <!-- Habits & Waste Form -->
-                        <div class="tracker-form-section" id="form-waste">
-                            <h3>Consumer Habits & Recycling</h3>
-                            <p class="section-desc">Purchasing electronics, clothing, and recycling efficiency influences indirect emissions.</p>
-
-                            <div class="form-grid-2">
-                                <div class="form-group">
-                                    <label for="clothing-purchases">Clothing Purchases (New items/month)</label>
-                                    <div class="counter-input">
-                                        <button class="btn btn-icon" type="button" onclick="adjustCounter('clothing-purchases', -1)">-</button>
-                                        <input type="number" id="clothing-purchases" value="2" min="0" max="100">
-                                        <button class="btn btn-icon" type="button" onclick="adjustCounter('clothing-purchases', 1)">+</button>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="electronics-purchases">New Electronics (Items/year)</label>
-                                    <div class="counter-input">
-                                        <button class="btn btn-icon" type="button" onclick="adjustCounter('electronics-purchases', -1)">-</button>
-                                        <input type="number" id="electronics-purchases" value="1" min="0" max="20">
-                                        <button class="btn btn-icon" type="button" onclick="adjustCounter('electronics-purchases', 1)">+</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Recycling Habits (Check what you regularly recycle)</label>
-                                <div class="checkbox-grid">
-                                    <label class="checkbox-container">
-                                        <input type="checkbox" id="recycle-paper" checked>
-                                        <span class="checkmark"></span>
-                                        Paper / Cardboard
-                                    </label>
-                                    <label class="checkbox-container">
-                                        <input type="checkbox" id="recycle-plastic" checked>
-                                        <span class="checkmark"></span>
-                                        Plastics
-                                    </label>
-                                    <label class="checkbox-container">
-                                        <input type="checkbox" id="recycle-glass">
-                                        <span class="checkmark"></span>
-                                        Glass
-                                    </label>
-                                    <label class="checkbox-container">
-                                        <input type="checkbox" id="recycle-metal">
-                                        <span class="checkmark"></span>
-                                        Metals / Cans
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Submit Button -->
-                        <div class="tracker-actions">
-                            <button class="btn btn-primary" id="btn-save-habits">
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="margin-right-sm"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                                Save & Recalculate
-                            </button>
-                            <span class="save-status" id="save-status-msg"></span>
-                        </div>
-                    </div>
+                <!-- Hidden inputs to preserve carbon calculations backward compatibility -->
+                <div style="display: none;">
+                    <input type="checkbox" id="owns-vehicle" checked>
+                    <select id="vehicle-type"><option value="sedan">sedan</option></select>
+                    <select id="fuel-type"><option value="petrol">petrol</option></select>
+                    <input type="range" id="car-distance" value="100">
+                    <input type="range" id="public-transit" value="2">
+                    <input type="number" id="flights" value="1">
+                    <input type="number" id="electricity" value="80">
+                    <input type="number" id="gas" value="40">
+                    <input type="range" id="clean-energy" value="0">
+                    <input type="number" id="house-members" value="2">
+                    <select id="diet-type"><option value="medium-meat">medium-meat</option></select>
+                    <input type="range" id="food-waste" value="20">
+                    <input type="number" id="clothing-purchases" value="2">
+                    <input type="number" id="electronics-purchases" value="1">
+                    <input type="checkbox" id="recycle-paper" checked>
+                    <input type="checkbox" id="recycle-plastic" checked>
+                    <input type="checkbox" id="recycle-glass" checked>
+                    <input type="checkbox" id="recycle-metal" checked>
                 </div>
             </section>
 
-            <!-- TAB 3: CHALLENGES -->
-            <section class="tab-content" id="tab-challenges">
-                <div class="challenges-layout">
-                    <!-- Left Column: Challenges -->
-                    <div class="challenges-section">
-                        <div class="section-title-bar">
-                            <h3>Eco-Challenges</h3>
-                            <span class="badge" id="points-total-badge">0 Points</span>
-                        </div>
-                        <p class="section-desc">Commit to these simple habits to see your carbon impact decrease and unlock new status levels.</p>
-
-                        <div class="challenges-list" id="challenges-container">
-                            <!-- Injected dynamically by app.js -->
-                        </div>
-                    </div>
-
-                    <!-- Right Column: Badges & Rewards -->
-                    <div class="badges-section card glass">
-                        <h3>Your Achievements</h3>
-                        <p class="section-desc">Earn badges as you accumulate EcoPoints from logging clean habits and completing challenges.</p>
-
-                        <div class="badges-grid" id="badges-container">
-                            <!-- Injected dynamically by app.js -->
-                        </div>
-
-                        <div class="points-progress-container">
-                            <div class="progress-details">
-                                <span id="current-rank-label">Rank: Eco Seed</span>
-                                <span id="next-rank-points">Need 100 points for next rank</span>
-                            </div>
-                            <div class="points-progress-bar-bg">
-                                <div class="points-progress-bar-fill" id="points-progress-fill" style="width: 0%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- TAB 4: ECOBOT SMART ASSISTANT -->
+            <!-- TAB 3: GAIA TERMINAL (CHAT & TRIVIA) -->
             <section class="tab-content" id="tab-assistant">
                 <div class="assistant-layout card glass">
                     <div class="assistant-header">
@@ -479,15 +415,15 @@
                             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--primary)" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M12 2v3M8 5h8M8 11V9a4 4 0 0 1 8 0v2"/></svg>
                         </div>
                         <div class="assistant-info">
-                            <h4>EcoBot</h4>
-                            <span class="assistant-status">Active • Ready to Help</span>
+                            <h4>Gaia Bot Terminal</h4>
+                            <span class="assistant-status">Active • Telepathic Link Online</span>
                         </div>
                         <button class="btn btn-secondary btn-sm" id="btn-clear-chat">Clear History</button>
                     </div>
 
                     <!-- Chat Log -->
                     <div class="chat-container-scroll" id="chat-messages">
-                        <!-- Message templates inserted here by JS -->
+                        <!-- Messages inserted by JS -->
                     </div>
 
                     <!-- Typing Indicator -->
@@ -499,15 +435,15 @@
 
                     <!-- Suggested Prompts Chips -->
                     <div class="chat-suggestion-chips" id="suggestion-chips">
-                        <button class="chip" onclick="sendSuggestion('Start Carbon Onboarding Quiz 📝')">Start Onboarding Quiz 📝</button>
-                        <button class="chip" onclick="sendSuggestion('Analyze my carbon footprint 📊')">Analyze my footprint 📊</button>
-                        <button class="chip" onclick="sendSuggestion('Log carbon savings 🚲')">Log carbon savings 🚲</button>
+                        <button class="chip" onclick="sendSuggestion('Play Planeteer Trivia Game 🧠')">Play Planeteer Trivia Game 🧠</button>
+                        <button class="chip" onclick="sendSuggestion('Run Gaia footprint diagnosis 📊')">Run footprint diagnosis 📊</button>
+                        <button class="chip" onclick="sendSuggestion('How to summon Captain Planet? 🦸‍♂️')">How to summon Captain Planet? 🦸‍♂️</button>
                         <button class="chip" onclick="sendSuggestion('Give me quick eco tips 💡')">Give me quick eco tips 💡</button>
                     </div>
 
                     <!-- Input Bar -->
                     <form class="chat-input-bar" id="chat-form">
-                        <input type="text" id="chat-input" placeholder="Ask EcoBot anything about your footprint..." autocomplete="off">
+                        <input type="text" id="chat-input" placeholder="Commune with Gaia Bot..." autocomplete="off">
                         <button type="submit" class="btn btn-primary" id="btn-send-message">
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                         </button>
@@ -515,6 +451,34 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- DECISION MODAL: ACTIVE NUDGES -->
+    <div id="decision-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-card glass">
+            <button class="btn-close-modal" onclick="closeDecisionModal()">&times;</button>
+            <div id="modal-lens-content">
+                <!-- Injected dynamically based on lens selected -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ACTION VERIFICATION MODAL -->
+    <div id="verify-modal" class="modal-overlay style-verify-overlay" style="display: none;">
+        <div class="modal-card glass verify-card-layout">
+            <button class="btn-close-modal" onclick="closeVerifyModal()">&times;</button>
+            <h3>Verify Your Action</h3>
+            <p class="section-desc">Submit device proofs to confirm your carbon-cutting choice and activate the Planeteer Ring!</p>
+            
+            <div id="verify-interface-container">
+                <!-- Injected dynamically: Video stream, GPS read, or Step Motion widget -->
+            </div>
+            
+            <div class="verify-modal-actions">
+                <button class="btn btn-primary" id="btn-confirm-verify">Submit Verification Proof</button>
+                <button class="btn btn-secondary" onclick="closeVerifyModal()">Cancel</button>
+            </div>
+        </div>
     </div>
 
     <!-- UI Overlay for interactive quiz triggers -->

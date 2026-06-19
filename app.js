@@ -1,249 +1,247 @@
 // Global State variables
 let state = {
-    habits: {
-        // Transportation
-        ownsVehicle: true,
-        vehicleType: 'sedan',
-        fuelType: 'petrol',
-        carDistance: 100, // weekly km
-        publicTransit: 2, // weekly hours
-        flights: 1, // annual count
-        
-        // Home Energy
-        electricityBill: 80, // monthly USD
-        gasBill: 40, // monthly USD
-        cleanEnergyPct: 0, // 0-100
-        householdMembers: 2,
-        
-        // Diet
-        dietType: 'medium-meat',
-        foodWaste: 20, // percentage
-        
-        // Habits & Waste
-        clothingPurchases: 2, // monthly
-        electronicsPurchases: 1, // annual
-        recyclePaper: true,
-        recyclePlastic: true,
-        recycleGlass: false,
-        recycleMetal: false
-    },
     points: 0,
-    completedChallenges: [],
+    unlockedRings: [], // 'earth', 'fire', 'wind', 'water', 'heart'
+    offsetAmount: 0, // 0-100% simulated offset
     chatHistory: [],
     region: 'global',
-    offsetAmount: 0, // 0-100% simulated offset
+    activeNudge: null, // current pending decision
     triviaState: {
         active: false,
         questionIndex: 0
-    },
-    quizState: {
-        active: false,
-        currentStep: 0,
-        tempData: {}
     }
 };
 
-// Emission factors (in kg CO2e)
-const EMISSION_FACTORS = {
-    transport: {
-        // base per km
-        car: {
-            suv: 0.24,
-            sedan: 0.17,
-            compact: 0.13,
-            motorcycle: 0.10
-        },
-        fuel: {
-            petrol: 1.0,
-            diesel: 1.1,
-            hybrid: 0.65,
-            electric: 0.3 // assuming average grid
-        },
-        transitPerHour: 1.2, // average speed 30km/h * transit factor
-        flightPerTrip: 250 // average short/mid haul flight
-    },
-    energy: {
-        // cost-to-emissions conversions:
-        // Assume electricity cost is $0.15/kWh
-        // Grid intensity by region (kg CO2e per kWh)
-        gridIntensity: {
-            us: 0.43,
-            eu: 0.23,
-            in: 0.78,
-            global: 0.47
-        },
-        electricityCostPerKwh: 0.15,
-        
-        // Assume gas cost is $1.20 per therm
-        // Natural gas emissions: 5.3 kg CO2e per therm
-        gasCostPerTherm: 1.20,
-        gasPerTherm: 5.3
-    },
-    diet: {
-        // Annual emissions in kg CO2e
-        'heavy-meat': 2500,
-        'medium-meat': 1700,
-        'low-meat': 1200,
-        'vegetarian': 800,
-        'vegan': 500,
-        // waste factor: food waste adds up to 25% extra footprint
-        wasteMultiplier: 0.5 // weight of food waste impact
-    },
-    waste: {
-        clothingPerItem: 10,
-        electronicsPerItem: 120, // annualized build cost
-        recyclingOffset: 25 // yearly reduction (kg) per category recycled
-    },
-    regionalAverages: {
-        // Annual tons CO2e per capita
-        us: 15.5,
-        eu: 6.5,
-        in: 1.9,
-        global: 4.8
-    }
+// Web Audio API Synth Engine
+let audioCtx = null;
+let bgmOsc = null;
+let bgmGain = null;
+let bgmInterval = null;
+let isPlayingMusic = false;
+
+// Element Colors
+const ELEMENT_COLORS = {
+    earth: '#10b981',
+    fire: '#ef4444',
+    wind: '#38bdf8',
+    water: '#2563eb',
+    heart: '#ec4899'
 };
 
-// Challenges list
-const CHALLENGES = [
+// Planeteer elements details
+const PLANETEER_ELEMENTS = {
+    earth: { name: 'Earth Ring', icon: '🪨', task: 'Composted waste or recycled paper/plastic', pts: 60, co2: 12 },
+    fire: { name: 'Fire Ring', icon: '🔥', task: 'Unplugged vampire appliances or offset electricity', pts: 40, co2: 8 },
+    wind: { name: 'Wind Ring', icon: '💨', task: 'Opted for cycling, walking, or public transit', pts: 70, co2: 15 },
+    water: { name: 'Water Ring', icon: '💧', task: 'Swapped a high-carbon meal for a plant-based alternative', pts: 50, co2: 10 },
+    heart: { name: 'Heart Ring', icon: '❤️', task: 'Bought secondhand or local sustainable goods', pts: 60, co2: 14 }
+};
+
+// Trivia game questions
+const TRIVIA_QUESTIONS = [
     {
-        id: 'car-free',
-        title: 'Commute Clean',
-        desc: 'Swap 3 short car trips (<5km) for walking, cycling, or public transit this week.',
-        pts: 50,
-        co2: 12, // kg saved
-        category: 'transport'
+        q: "Gaia asks: What percentage of global greenhouse gas emissions come from food production?",
+        options: ["A) 10%", "B) 26%", "C) 50%"],
+        correct: "b",
+        explain: "Food production accounts for about 26% of global emissions. Swapping beef/mutton for plant-based foods is the most immediate way to cut this footprint."
     },
     {
-        id: 'meatless-mon',
-        title: 'Meatless Days',
-        desc: 'Go completely vegetarian or vegan for 3 days this week.',
-        pts: 40,
-        co2: 9,
-        category: 'food'
+        q: "Captain Planet asks: Which transit method has the lowest carbon footprint per passenger-kilometer?",
+        options: ["A) Electric Train", "B) Electric SUV (EV)", "C) Diesel Bus"],
+        correct: "a",
+        explain: "Electric trains are highly efficient mass-transit systems. They beat even individual electric SUVs due to high passenger density!"
     },
     {
-        id: 'unplug-vampires',
-        title: 'Vampire Power Cut',
-        desc: 'Unplug all unused chargers and electronics on standby mode before bed.',
-        pts: 20,
-        co2: 4,
-        category: 'energy'
-    },
-    {
-        id: 'cool-thermostat',
-        title: 'Eco Thermostat',
-        desc: 'Keep your thermostat 2°C higher in summer or cooler in winter for 5 days.',
-        pts: 30,
-        co2: 10,
-        category: 'energy'
-    },
-    {
-        id: 'zero-waste',
-        title: 'Sort Master',
-        desc: 'Ensure 100% of your recyclable plastics, paper, metal, and glass are sorted and cleaned.',
-        pts: 30,
-        co2: 5,
-        category: 'waste'
-    },
-    {
-        id: 'secondhand-first',
-        title: 'Pre-loved Purchases',
-        desc: 'Buy second-hand or borrow instead of buying brand new products.',
-        pts: 45,
-        co2: 15,
-        category: 'waste'
-    },
-    {
-        id: 'line-dry',
-        title: 'Dry Naturally',
-        desc: 'Line-dry your laundry in the sun/air instead of running a machine tumble dryer.',
-        pts: 25,
-        co2: 8,
-        category: 'energy'
+        q: "Wheeler asks: How much CO2 does a single mature tree absorb on average per year?",
+        options: ["A) 5 kg", "B) 22 kg", "C) 100 kg"],
+        correct: "b",
+        explain: "A mature tree absorbs roughly 22 kg (48 lbs) of carbon dioxide annually from the atmosphere. Every tree planted counts!"
     }
 ];
 
-// Badge / Ranks details
-const RANKS = [
-    { name: 'Eco Seed', threshold: 0, icon: '🌱' },
-    { name: 'Carbon Cutter', threshold: 100, icon: '✂️' },
-    { name: 'Green Guardian', threshold: 250, icon: '🛡️' },
-    { name: 'Eco Warrior', threshold: 450, icon: '⚔️' },
-    { name: 'Earth Protector', threshold: 700, icon: '🌍' }
-];
-
-// Initialize DOM and App logic
+// Initialize DOM
 document.addEventListener('DOMContentLoaded', () => {
     loadState();
     setupTabNavigation();
-    setupTrackerSliders();
+    setupAudioController();
+    setupOffsetSlider();
     setupSelectors();
-    
-    // Attach Offset Simulator listener
-    const offsetSlider = document.getElementById('offset-simulate-slider');
-    if (offsetSlider) {
-        offsetSlider.value = state.offsetAmount || 0;
-        document.getElementById('offset-simulate-val').textContent = (state.offsetAmount || 0) + '% offsetted';
-        document.getElementById('offset-points-badge').textContent = `+${Math.round((state.offsetAmount || 0) / 2)} Points`;
-        
-        offsetSlider.addEventListener('input', (e) => {
-            state.offsetAmount = parseFloat(e.target.value) || 0;
-            document.getElementById('offset-simulate-val').textContent = state.offsetAmount + '% offsetted';
-            document.getElementById('offset-points-badge').textContent = `+${Math.round(state.offsetAmount / 2)} Points`;
-            saveState();
-            renderAll();
-        });
-    }
-
     renderAll();
     
-    // EcoBot greeting
+    // Welcome message in chat
     if (state.chatHistory.length === 0) {
-        addBotMessage("Hi! I'm EcoBot, your smart carbon assistant. 🌱\n\nI can help you understand your footprint, suggest personalized reductions, and log daily habits directly from our chat. \n\nWhere would you like to start?", [
-            { text: "Take Onboarding Quiz 📝", action: "start_quiz" },
-            { text: "Quick Footprint Check 📊", action: "analyze" },
-            { text: "Give me eco tips 💡", action: "tips" },
-            { text: "Play Eco-Trivia Game 🧠", action: "start_trivia" }
+        addBotMessage("Greetings, Planeteer! I am Gaia. 🌍\n\nEcoSync Lens has initiated. Our mission is to protect the biosphere by making carbon-aware choices at the moment of decision. \n\nWe need to activate the **5 Planeteer Rings** (Earth, Fire, Wind, Water, Heart) to clean up the environment and summon Captain Planet. Where shall we start?", [
+            { text: "Play Planeteer Trivia 🧠", action: "start_trivia" },
+            { text: "Diagnose Footprint 📊", action: "analyze" },
+            { text: "Clean Energy Tips 💡", action: "tips" }
         ]);
     } else {
         restoreChat();
     }
 
-    // Attach Save Button listener
-    document.getElementById('btn-save-habits').addEventListener('click', saveHabitsFromForm);
-    document.getElementById('btn-refresh-insights').addEventListener('click', () => {
-        generateInsights();
-        showToast("Insights refreshed and recalculated!");
-    });
-    
+    // Attach listeners
     document.getElementById('btn-clear-chat').addEventListener('click', clearChatHistory);
     document.getElementById('chat-form').addEventListener('submit', handleChatSubmit);
+    document.getElementById('btn-refresh-insights').addEventListener('click', () => {
+        generateInsights();
+        showToast("Gaia Terminal Insights updated!");
+    });
 });
 
 // Load State from LocalStorage
 function loadState() {
-    const saved = localStorage.getItem('ecosync_state');
+    const saved = localStorage.getItem('ecosync_lens_state');
     if (saved) {
         try {
             state = JSON.parse(saved);
-            // Verify structure matches
-            if (!state.habits) state.habits = {};
-            if (!state.completedChallenges) state.completedChallenges = [];
+            if (!state.unlockedRings) state.unlockedRings = [];
             if (!state.chatHistory) state.chatHistory = [];
-            if (state.offsetAmount === undefined) state.offsetAmount = 0;
-            if (!state.triviaState) state.triviaState = { active: false, questionIndex: 0 };
         } catch (e) {
-            console.error("Failed to parse local state", e);
+            console.error("Failed to load local state", e);
         }
     }
 }
 
-// Save State to LocalStorage
 function saveState() {
-    localStorage.setItem('ecosync_state', JSON.stringify(state));
+    localStorage.setItem('ecosync_lens_state', JSON.stringify(state));
 }
 
-// Tab switcher
+// ----------------- WEB AUDIO SYNTHESIZER ENGINE -----------------
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+}
+
+// Play Retro synth loop
+function startRetroBGM() {
+    initAudio();
+    if (isPlayingMusic) return;
+
+    isPlayingMusic = true;
+    
+    // Create nodes
+    bgmGain = audioCtx.createGain();
+    bgmGain.gain.setValueAtTime(0.08, audioCtx.currentTime); // Low background volume
+    bgmGain.connect(audioCtx.destination);
+
+    // E, G, A, B retro arpeggio notes
+    const melody = [329.63, 392.00, 440.00, 493.88, 440.00, 392.00, 329.63, 293.66];
+    let noteIndex = 0;
+    
+    // Programmatic retro step sequencer loop
+    bgmInterval = setInterval(() => {
+        if (!audioCtx || audioCtx.state === 'suspended') return;
+        
+        const osc = audioCtx.createOscillator();
+        const noteGain = audioCtx.createGain();
+        
+        // Triangle wave for smooth 8-bit sound
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(melody[noteIndex], audioCtx.currentTime);
+        
+        noteGain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        noteGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+        
+        osc.connect(noteGain);
+        noteGain.connect(bgmGain);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.4);
+        
+        noteIndex = (noteIndex + 1) % melody.length;
+    }, 450);
+}
+
+function stopRetroBGM() {
+    if (bgmInterval) {
+        clearInterval(bgmInterval);
+        bgmInterval = null;
+    }
+    isPlayingMusic = false;
+}
+
+// Play Ascending Chime SFX
+function playRingChimeSFX() {
+    initAudio();
+    if (!audioCtx) return;
+    
+    const now = audioCtx.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+    
+    notes.forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + (idx * 0.08));
+        
+        gain.gain.setValueAtTime(0.12, now + (idx * 0.08));
+        gain.gain.exponentialRampToValueAtTime(0.001, now + (idx * 0.08) + 0.25);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.start(now + (idx * 0.08));
+        osc.stop(now + (idx * 0.08) + 0.3);
+    });
+}
+
+// Play Ascending Epic Summon SFX
+function playSummonSFX() {
+    initAudio();
+    if (!audioCtx) return;
+
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = 'sawtooth';
+    // Sweep frequency upwards
+    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.exponentialRampToValueAtTime(1200, now + 1.2);
+    
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+    
+    // Add lowpass filter for retro sweep
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(400, now);
+    filter.frequency.exponentialRampToValueAtTime(2000, now + 1.0);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    osc.start(now);
+    osc.stop(now + 1.25);
+}
+
+function setupAudioController() {
+    const musicBtn = document.getElementById('btn-toggle-music');
+    const playIcon = musicBtn.querySelector('.icon-play');
+    const pauseIcon = musicBtn.querySelector('.icon-pause');
+    const btnText = document.getElementById('music-btn-text');
+
+    musicBtn.addEventListener('click', () => {
+        if (!isPlayingMusic) {
+            startRetroBGM();
+            playIcon.style.display = 'none';
+            pauseIcon.style.display = 'inline-block';
+            btnText.textContent = "Mute Music";
+            showToast("BGM Retro Synth started! 🎵");
+        } else {
+            stopRetroBGM();
+            playIcon.style.display = 'inline-block';
+            pauseIcon.style.display = 'none';
+            btnText.textContent = "Play BGM";
+            showToast("Music muted.");
+        }
+    });
+}
+
+// ----------------- TAB NAVIGATION -----------------
 function setupTabNavigation() {
     const navButtons = document.querySelectorAll('.nav-btn');
     navButtons.forEach(btn => {
@@ -255,7 +253,6 @@ function setupTabNavigation() {
 }
 
 function switchTab(tabId) {
-    // Update navigation styles
     document.querySelectorAll('.nav-btn').forEach(btn => {
         if (btn.getAttribute('data-tab') === tabId) {
             btn.classList.add('active');
@@ -264,7 +261,6 @@ function switchTab(tabId) {
         }
     });
 
-    // Update content tabs
     document.querySelectorAll('.tab-content').forEach(content => {
         if (content.id === `tab-${tabId}`) {
             content.classList.add('active');
@@ -274,78 +270,30 @@ function switchTab(tabId) {
     });
 }
 
-// Setup Activity Tracker Sliders dynamic labels
-function setupTrackerSliders() {
-    const sliders = [
-        { id: 'car-distance', suffix: ' km/week' },
-        { id: 'public-transit', suffix: ' hours/week' },
-        { id: 'clean-energy', suffix: '% green power' },
-        { id: 'food-waste', suffix: '% wasted' }
-    ];
-
-    sliders.forEach(slider => {
-        const input = document.getElementById(slider.id);
-        const valSpan = document.getElementById(`${slider.id}-val`);
-        if (input && valSpan) {
-            // Initial render
-            valSpan.textContent = input.value + slider.suffix;
+// Setup Offset slider
+function setupOffsetSlider() {
+    const slider = document.getElementById('offset-simulate-slider');
+    if (slider) {
+        slider.addEventListener('input', (e) => {
+            state.offsetAmount = parseInt(e.target.value) || 0;
+            document.getElementById('offset-simulate-val').textContent = state.offsetAmount + '% offsetted';
             
-            // On input change
-            input.addEventListener('input', (e) => {
-                valSpan.textContent = e.target.value + slider.suffix;
-            });
-        }
-    });
-
-    // Custom toggle logic for vehicle ownership
-    const ownsCheckbox = document.getElementById('owns-vehicle');
-    const toggleText = document.getElementById('vehicle-toggle-text');
-    const detailsContainer = document.getElementById('vehicle-details-container');
-
-    if (ownsCheckbox) {
-        ownsCheckbox.addEventListener('change', (e) => {
-            if (e.target.checked) {
-                toggleText.textContent = "Yes, I drive a car";
-                detailsContainer.style.display = "block";
-            } else {
-                toggleText.textContent = "No, I don't drive";
-                detailsContainer.style.display = "none";
+            const offsetPoints = Math.round(state.offsetAmount / 2);
+            document.getElementById('offset-points-badge').textContent = `+${offsetPoints} Points`;
+            
+            // Fire ring unlocks if offset is 50%+
+            if (state.offsetAmount >= 50 && !state.unlockedRings.includes('fire')) {
+                unlockRing('fire');
+            } else if (state.offsetAmount < 50 && state.unlockedRings.includes('fire')) {
+                lockRing('fire');
             }
+
+            saveState();
+            renderAll();
         });
-    }
-
-    // Category navigation inside log habits tab
-    const catButtons = document.querySelectorAll('.tracker-cat-btn');
-    catButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            catButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-
-            const category = btn.getAttribute('data-category');
-            document.querySelectorAll('.tracker-form-section').forEach(section => {
-                if (section.id === `form-${category}`) {
-                    section.classList.add('active');
-                } else {
-                    section.classList.remove('active');
-                }
-            });
-        });
-    });
-}
-
-// Counters increment/decrement
-function adjustCounter(id, delta) {
-    const input = document.getElementById(id);
-    if (input) {
-        const val = parseInt(input.value) || 0;
-        const min = parseInt(input.min) || 0;
-        const max = parseInt(input.max) || 100;
-        const newVal = Math.max(min, Math.min(max, val + delta));
-        input.value = newVal;
     }
 }
 
-// Selectors
 function setupSelectors() {
     const regionSelect = document.getElementById('region-select');
     if (regionSelect) {
@@ -354,220 +302,128 @@ function setupSelectors() {
             state.region = e.target.value;
             saveState();
             renderAll();
-            showToast(`Region set to ${e.target.options[e.target.selectedIndex].text}`);
+            showToast(`Gaia Calibration: Region set to ${e.target.options[e.target.selectedIndex].text}`);
         });
     }
 }
 
-// Save Habits from Input Form
-function saveHabitsFromForm() {
-    const h = state.habits;
-    
-    // Transport inputs
-    h.ownsVehicle = document.getElementById('owns-vehicle').checked;
-    h.vehicleType = document.getElementById('vehicle-type').value;
-    h.fuelType = document.getElementById('fuel-type').value;
-    h.carDistance = parseFloat(document.getElementById('car-distance').value) || 0;
-    h.publicTransit = parseFloat(document.getElementById('public-transit').value) || 0;
-    h.flights = parseInt(document.getElementById('flights').value) || 0;
+// ----------------- PLANETEER RING CONTROLLER -----------------
+function unlockRing(element) {
+    if (!state.unlockedRings.includes(element)) {
+        state.unlockedRings.push(element);
+        const pts = PLANETEER_ELEMENTS[element].pts;
+        state.points += pts;
+        
+        // Add class active on UI
+        const slot = document.getElementById(`ring-${element}`);
+        if (slot) slot.classList.add('active');
 
-    // Energy inputs
-    h.electricityBill = parseFloat(document.getElementById('electricity').value) || 0;
-    h.gasBill = parseFloat(document.getElementById('gas').value) || 0;
-    h.cleanEnergyPct = parseFloat(document.getElementById('clean-energy').value) || 0;
-    h.householdMembers = parseInt(document.getElementById('house-members').value) || 1;
+        playRingChimeSFX();
+        showToast(`${PLANETEER_ELEMENTS[element].name} Activated! +${pts} pts! 🌟`);
+        
+        addBotMessage(`✨ **${PLANETEER_ELEMENTS[element].name} Activated!**\n\nYou successfully verified: *${PLANETEER_ELEMENTS[element].task}*.\n\nCarbon Saved: **${PLANETEER_ELEMENTS[element].co2} kg CO2e**. Earned **+${pts} EcoPoints**!`);
+        
+        // Check for Captain Planet summon
+        if (state.unlockedRings.length === 5) {
+            triggerCaptainPlanetSummon();
+        }
 
-    // Food inputs
-    h.dietType = document.getElementById('diet-type').value;
-    h.foodWaste = parseFloat(document.getElementById('food-waste').value) || 0;
-
-    // Habits inputs
-    h.clothingPurchases = parseInt(document.getElementById('clothing-purchases').value) || 0;
-    h.electronicsPurchases = parseInt(document.getElementById('electronics-purchases').value) || 0;
-    h.recyclePaper = document.getElementById('recycle-paper').checked;
-    h.recyclePlastic = document.getElementById('recycle-plastic').checked;
-    h.recycleGlass = document.getElementById('recycle-glass').checked;
-    h.recycleMetal = document.getElementById('recycle-metal').checked;
-
-    saveState();
-    renderAll();
-
-    const saveMsg = document.getElementById('save-status-msg');
-    saveMsg.textContent = "Carbon stats updated successfully!";
-    setTimeout(() => {
-        saveMsg.textContent = "";
-    }, 3000);
-
-    showToast("Habits logged. Dashboard updated!");
-}
-
-// Read current state values and populate form
-function populateFormFromState() {
-    const h = state.habits;
-    if (!h) return;
-
-    // Transport inputs
-    document.getElementById('owns-vehicle').checked = h.ownsVehicle;
-    document.getElementById('vehicle-type').value = h.vehicleType;
-    document.getElementById('fuel-type').value = h.fuelType;
-    document.getElementById('car-distance').value = h.carDistance;
-    document.getElementById('car-distance-val').textContent = h.carDistance + ' km/week';
-    document.getElementById('public-transit').value = h.publicTransit;
-    document.getElementById('public-transit-val').textContent = h.publicTransit + ' hours/week';
-    document.getElementById('flights').value = h.flights;
-
-    const detailsContainer = document.getElementById('vehicle-details-container');
-    const toggleText = document.getElementById('vehicle-toggle-text');
-    if (h.ownsVehicle) {
-        toggleText.textContent = "Yes, I drive a car";
-        detailsContainer.style.display = "block";
-    } else {
-        toggleText.textContent = "No, I don't drive";
-        detailsContainer.style.display = "none";
+        saveState();
+        renderAll();
     }
-
-    // Energy inputs
-    document.getElementById('electricity').value = h.electricityBill;
-    document.getElementById('gas').value = h.gasBill;
-    document.getElementById('clean-energy').value = h.cleanEnergyPct;
-    document.getElementById('clean-energy-val').textContent = h.cleanEnergyPct + '% green power';
-    document.getElementById('house-members').value = h.householdMembers;
-
-    // Food inputs
-    document.getElementById('diet-type').value = h.dietType;
-    document.getElementById('food-waste').value = h.foodWaste;
-    document.getElementById('food-waste-val').textContent = h.foodWaste + '% wasted';
-
-    // Habits inputs
-    document.getElementById('clothing-purchases').value = h.clothingPurchases;
-    document.getElementById('electronics-purchases').value = h.electronicsPurchases;
-    document.getElementById('recycle-paper').checked = h.recyclePaper;
-    document.getElementById('recycle-plastic').checked = h.recyclePlastic;
-    document.getElementById('recycle-glass').checked = h.recycleGlass;
-    document.getElementById('recycle-metal').checked = h.recycleMetal;
 }
 
-// ----------------- CARBON CALCULATOR -----------------
+function lockRing(element) {
+    const index = state.unlockedRings.indexOf(element);
+    if (index !== -1) {
+        state.unlockedRings.splice(index, 1);
+        const pts = PLANETEER_ELEMENTS[element].pts;
+        state.points = Math.max(0, state.points - pts);
+        
+        const slot = document.getElementById(`ring-${element}`);
+        if (slot) slot.classList.remove('remove');
+
+        saveState();
+        renderAll();
+    }
+}
+
+function triggerCaptainPlanetSummon() {
+    playSummonSFX();
+    showToast("🦸‍♂️ BY YOUR POWERS COMBINED, CAPTAIN PLANET SUMMONED! 🦸‍♂️");
+    
+    // Add bot message
+    addBotMessage("🦸‍♂️ **Captain Planet: 'By your powers combined, I am here!** You have successfully balanced all five elements and reached a net-zero trajectory. Remember Planeteers, the power is yours! Go Planet! 🌍' ");
+}
+
+// ----------------- CARBON ENGINE (COPILOT ADAPTED) -----------------
 function calculateEmissions() {
-    const h = state.habits;
+    // Standard baseline emissions (Tons CO2e/year)
+    // We calibrate based on region average, subtracted by rings unlocked and offsets
     const region = state.region || 'global';
     
-    // 1. TRANSPORTATION EMISSIONS (Annual Tons CO2e)
-    let transportAnnual = 0;
-    if (h.ownsVehicle) {
-        const distancePerYear = h.carDistance * 52; // km/year
-        const factor = EMISSION_FACTORS.transport.car[h.vehicleType] || 0.17;
-        const fuelMultiplier = EMISSION_FACTORS.transport.fuel[h.fuelType] || 1.0;
-        transportAnnual += distancePerYear * factor * fuelMultiplier;
-    }
-    // Public Transit
-    const transitDistancePerYear = (h.publicTransit * 30) * 52; // 30 km/h avg speed
-    transportAnnual += transitDistancePerYear * 0.04; // 0.04 kg/km average
-    // Flights
-    transportAnnual += h.flights * EMISSION_FACTORS.transport.flightPerTrip; // annual total in kg
-    
-    const transportTons = transportAnnual / 1000;
+    // Regional Baseline
+    let baseCarbon = 4.8; // global avg
+    if (region === 'us') baseCarbon = 15.5;
+    else if (region === 'eu') baseCarbon = 6.5;
+    else if (region === 'in') baseCarbon = 1.9;
 
-    // 2. ENERGY EMISSIONS (Annual Tons CO2e)
-    // Electricity conversion: (Bill / cost per kWh) * grid intensity * 12 months
-    const gridIntensity = EMISSION_FACTORS.energy.gridIntensity[region] || 0.47;
-    const cleanPowerOffset = (100 - h.cleanEnergyPct) / 100;
-    const electricityAnnualKwh = (h.electricityBill / EMISSION_FACTORS.energy.electricityCostPerKwh) * 12;
-    const electricityAnnualKg = electricityAnnualKwh * gridIntensity * cleanPowerOffset;
-
-    // Natural Gas conversion: (Bill / cost per therm) * emissions * 12 months
-    const gasAnnualTherms = (h.gasBill / EMISSION_FACTORS.energy.gasCostPerTherm) * 12;
-    const gasAnnualKg = gasAnnualTherms * EMISSION_FACTORS.energy.gasPerTherm;
-
-    // Divide energy by household members
-    const energyTons = ((electricityAnnualKg + gasAnnualKg) / Math.max(1, h.householdMembers)) / 1000;
-
-    // 3. DIET EMISSIONS (Annual Tons CO2e)
-    const baseDietKg = EMISSION_FACTORS.diet[h.dietType] || 1700;
-    // Food waste impact
-    const wasteFactor = 1 + (h.foodWaste / 100) * EMISSION_FACTORS.diet.wasteMultiplier;
-    const dietTons = (baseDietKg * wasteFactor) / 1000;
-
-    // 4. CONSUMPTION & WASTE (Annual Tons CO2e)
-    let wasteAnnualKg = (h.clothingPurchases * 12 * EMISSION_FACTORS.waste.clothingPerItem) + 
-                        (h.electronicsPurchases * EMISSION_FACTORS.waste.electronicsPerItem);
-    
-    // Subtract recycling offsets
-    let recyclingOffsetTotal = 0;
-    if (h.recyclePaper) recyclingOffsetTotal += EMISSION_FACTORS.waste.recyclingOffset;
-    if (h.recyclePlastic) recyclingOffsetTotal += EMISSION_FACTORS.waste.recyclingOffset;
-    if (h.recycleGlass) recyclingOffsetTotal += EMISSION_FACTORS.waste.recyclingOffset;
-    if (h.recycleMetal) recyclingOffsetTotal += EMISSION_FACTORS.waste.recyclingOffset;
-    
-    wasteAnnualKg = Math.max(50, wasteAnnualKg - recyclingOffsetTotal); // clamp minimum at 50kg for baseline consumption
-    const wasteTons = wasteAnnualKg / 1000;
-
-    // TOTALS
-    const totalRaw = transportTons + energyTons + dietTons + wasteTons;
-    
-    // Subtract Active Challenges Completed reduction values
-    let totalCompletedChallengeReductions = 0;
-    state.completedChallenges.forEach(cid => {
-        const challenge = CHALLENGES.find(c => c.id === cid);
-        if (challenge) {
-            // challenges savings are weekly/monthly. annualized:
-            totalCompletedChallengeReductions += (challenge.co2 * 52) / 1000; // annual tons
+    // Direct reductions from unlocked rings
+    let ringReductions = 0;
+    state.unlockedRings.forEach(r => {
+        const details = PLANETEER_ELEMENTS[r];
+        if (details) {
+            // annualize reductions (e.g. 15kg weekly commute = 0.78 tons)
+            ringReductions += (details.co2 * 52) / 1000;
         }
     });
 
-    // Subtract simulated carbon offset
-    const offsetTons = totalRaw * ((state.offsetAmount || 0) / 100);
-    const totalProjected = Math.max(0.0, totalRaw - totalCompletedChallengeReductions - offsetTons);
+    const totalRaw = baseCarbon;
+    const offsetTons = totalRaw * (state.offsetAmount / 100);
+    const totalProjected = Math.max(0.0, totalRaw - ringReductions - offsetTons);
 
     return {
-        transport: transportTons,
-        energy: energyTons,
-        diet: dietTons,
-        waste: wasteTons,
+        transport: Math.max(0.1, baseCarbon * 0.35 - (state.unlockedRings.includes('wind') ? 0.78 : 0)),
+        energy: Math.max(0.1, baseCarbon * 0.3 - (state.unlockedRings.includes('fire') ? 0.41 : 0)),
+        diet: Math.max(0.1, baseCarbon * 0.22 - (state.unlockedRings.includes('water') ? 0.52 : 0)),
+        waste: Math.max(0.1, baseCarbon * 0.13 - (state.unlockedRings.includes('earth') ? 0.25 : 0)),
         totalRaw: totalRaw,
-        reductions: totalCompletedChallengeReductions + offsetTons,
+        reductions: ringReductions + offsetTons,
         totalProjected: totalProjected
     };
 }
 
 // ----------------- RENDER ENGINE -----------------
 function renderAll() {
-    populateFormFromState();
-    
-    // Calculate values
     const emissions = calculateEmissions();
-    
-    // Compute total points including offsets
-    const totalPointsDisplay = state.points + Math.round((state.offsetAmount || 0) / 2);
+    const displayPoints = state.points + Math.round((state.offsetAmount || 0) / 2);
 
-    // Update Dashboard Metrics
+    // Update Header
+    document.getElementById('header-points').textContent = displayPoints;
+    
+    // Ranks mapping
+    let currentRank = RANKS[0];
+    for (let i = 0; i < RANKS.length; i++) {
+        if (displayPoints >= RANKS[i].threshold) {
+            currentRank = RANKS[i];
+        }
+    }
+    document.getElementById('header-badge').textContent = `${currentRank.icon} ${currentRank.name}`;
+
+    // Update Console Metrics
     const totalCo2Span = document.getElementById('dashboard-total-co2');
-    if (totalCo2Span) {
-        totalCo2Span.textContent = emissions.totalProjected.toFixed(1);
-    }
-    
-    // Active challenges stats
-    const activeChallengesSpan = document.getElementById('dashboard-active-challenges');
-    if (activeChallengesSpan) {
-        // Active = total challenges minus completed ones
-        activeChallengesSpan.textContent = (CHALLENGES.length - state.completedChallenges.length).toString();
-    }
-    
-    // Points stats
-    document.getElementById('header-points').textContent = totalPointsDisplay;
-    const ptsValueDashboard = document.getElementById('dashboard-points');
-    if (ptsValueDashboard) ptsValueDashboard.textContent = totalPointsDisplay;
-    const ptsBadgeTotal = document.getElementById('points-total-badge');
-    if (ptsBadgeTotal) ptsBadgeTotal.textContent = `${totalPointsDisplay} Points`;
-    
-    // Reduction Impact stat
-    const reductionSpan = document.getElementById('dashboard-reduction');
-    if (reductionSpan) {
-        // reduction in kg/year
-        reductionSpan.textContent = `${Math.round(emissions.reductions * 1000)} kg/yr`;
-    }
+    if (totalCo2Span) totalCo2Span.textContent = emissions.totalProjected.toFixed(1);
 
-    // Comparison to regional average
+    const activeSpan = document.getElementById('dashboard-active-challenges');
+    if (activeSpan) activeSpan.textContent = state.unlockedRings.length.toString() + "/5";
+
+    const ptsSpan = document.getElementById('dashboard-points');
+    if (ptsSpan) ptsSpan.textContent = displayPoints;
+
+    const reductionSpan = document.getElementById('dashboard-reduction');
+    if (reductionSpan) reductionSpan.textContent = `${Math.round(emissions.reductions * 1000)} kg/yr`;
+
+    // Regional averages comparison
     const region = state.region || 'global';
     const regionAvg = EMISSION_FACTORS.regionalAverages[region] || 4.8;
     const comparisonText = document.getElementById('comparison-text');
@@ -575,133 +431,555 @@ function renderAll() {
     
     if (comparisonText && comparisonFill) {
         const pctOfAvg = (emissions.totalProjected / regionAvg) * 100;
-        
         let labelText = "";
-        if (pctOfAvg < 60) {
-            labelText = `${Math.round(100 - pctOfAvg)}% below average (Excellent! 🌱)`;
+        if (pctOfAvg < 50) {
+            labelText = `${Math.round(100 - pctOfAvg)}% below average (Planet Saved! 🦸‍♂️)`;
             comparisonFill.style.background = "linear-gradient(90deg, #10b981 0%, #34d399 100%)";
         } else if (pctOfAvg <= 100) {
-            labelText = `${Math.round(100 - pctOfAvg)}% below average (Good 🌿)`;
+            labelText = `${Math.round(100 - pctOfAvg)}% below average (Good Job 🌿)`;
             comparisonFill.style.background = "linear-gradient(90deg, #10b981 0%, #f59e0b 100%)";
         } else {
-            labelText = `${Math.round(pctOfAvg - 100)}% above average (Needs work ⚠️)`;
+            labelText = `${Math.round(pctOfAvg - 100)}% above average (Smog Rising ⚠️)`;
             comparisonFill.style.background = "linear-gradient(90deg, #f59e0b 0%, #f43f5e 100%)";
         }
-        
         comparisonText.textContent = labelText;
-        
-        // Cap visual representation between 5% and 100%
-        const visualWidth = Math.max(5, Math.min(100, pctOfAvg));
-        comparisonFill.style.width = `${visualWidth}%`;
+        comparisonFill.style.width = `${Math.max(5, Math.min(100, pctOfAvg))}%`;
     }
 
-    // Update User Badges and Rank Progress
-    updateRankAndBadges(totalPointsDisplay);
+    // Render active state on Ring Slots
+    setupRingSlotsUI();
 
-    // Render SVG Doughnut Chart
+    // Render Gaia EcoWorld SVG
+    updateGaiaEcoWorldSVG(emissions);
+
+    // Render visual doughnut
     renderDoughnutChart(emissions);
 
-    // Render Historical Trend Chart
+    // Render historical bar chart
     renderHistoricalChart(emissions);
 
-    // Render Offset Trees status
+    // Render offset trees card
     renderOffsetCard(emissions);
 
-    // Render Challenges
-    renderChallengesList();
-
-    // Render Badges panel
-    renderBadgesGrid();
-
-    // Generate smart insights
+    // Generate insights
     generateInsights(emissions);
 }
 
-function updateRankAndBadges(displayPoints) {
-    let currentRank = RANKS[0];
-    let nextRank = RANKS[1];
-    
-    const activePoints = typeof displayPoints === 'number' ? displayPoints : state.points;
-    
-    // Find highest rank unlocked
-    for (let i = 0; i < RANKS.length; i++) {
-        if (activePoints >= RANKS[i].threshold) {
-            currentRank = RANKS[i];
-            nextRank = RANKS[i+1] || null;
-        }
-    }
-
-    // Header badge text
-    document.getElementById('header-badge').textContent = `${currentRank.icon} ${currentRank.name}`;
-    
-    // Challenges tab rank text
-    const rankLabel = document.getElementById('current-rank-label');
-    if (rankLabel) {
-        rankLabel.textContent = `Rank: ${currentRank.name} ${currentRank.icon}`;
-    }
-
-    // Progress to next rank
-    const progressFill = document.getElementById('points-progress-fill');
-    const nextRankLabel = document.getElementById('next-rank-points');
-    
-    if (nextRankLabel && progressFill) {
-        if (nextRank) {
-            const range = nextRank.threshold - currentRank.threshold;
-            const progressWithinRange = state.points - currentRank.threshold;
-            const pct = Math.max(0, Math.min(100, (progressWithinRange / range) * 100));
-            
-            progressFill.style.width = `${pct}%`;
-            nextRankLabel.textContent = `Need ${nextRank.threshold - state.points} points for ${nextRank.name}`;
+function setupRingSlotsUI() {
+    document.querySelectorAll('.ring-slot').forEach(slot => {
+        const el = slot.getAttribute('data-element');
+        if (state.unlockedRings.includes(el)) {
+            slot.classList.add('active');
         } else {
-            progressFill.style.width = '100%';
-            nextRankLabel.textContent = 'Ultimate Rank Unlocked! 🏅';
+            slot.classList.remove('active');
+        }
+    });
+
+    const alert = document.getElementById('summon-alert');
+    if (alert) {
+        if (state.unlockedRings.length === 5) {
+            alert.textContent = "🦸‍♂️ CAPTAIN PLANET IS ACTIVE! GO PLANET! 🌍";
+            alert.classList.add('summoned');
+        } else {
+            alert.textContent = `Elements active: ${state.unlockedRings.length}/5 (Unleash Earth, Fire, Wind, Water, Heart)`;
+            alert.classList.remove('summoned');
         }
     }
 }
 
-// Custom SVG Doughnut Chart Renderer
+// ----------------- GAIA ECOWORLD SVG ANIMATOR -----------------
+function updateGaiaEcoWorldSVG(emissions) {
+    const svg = document.getElementById('gaia-svg');
+    const healthBadge = document.getElementById('gaia-health-badge');
+    const smog = document.getElementById('svg-smog');
+    const river = document.getElementById('svg-river');
+    const foliage = document.getElementById('svg-foliage');
+    const flowers = document.getElementById('svg-flowers');
+    const capGlow = document.getElementById('svg-captain-glow');
+    const capPlanet = document.getElementById('svg-captain-planet');
+
+    if (!svg) return;
+
+    // Health matches activated rings (20% per ring)
+    const healthPct = state.unlockedRings.length * 20;
+    
+    if (healthBadge) {
+        healthBadge.textContent = `Health: ${healthPct}%`;
+        if (healthPct >= 80) healthBadge.style.borderColor = 'var(--primary)';
+        else if (healthPct >= 40) healthBadge.style.borderColor = 'var(--accent-orange)';
+        else healthBadge.style.borderColor = 'var(--color-fire)';
+    }
+
+    // 1. Smog opacity decreases as elements are unlocked
+    if (smog) {
+        const maxSmog = 0.65;
+        const currentSmog = Math.max(0, maxSmog - (state.unlockedRings.length * 0.13));
+        smog.setAttribute('opacity', currentSmog.toString());
+    }
+
+    // 2. River color shifts from murky grey (#475569) to clear sparkling blue (#0ea5e9)
+    if (river) {
+        if (healthPct >= 80) river.setAttribute('fill', '#0ea5e9'); // Clear blue
+        else if (healthPct >= 40) river.setAttribute('fill', '#1d4ed8'); // Standard blue
+        else river.setAttribute('fill', '#334155'); // Murky
+    }
+
+    // 3. Foliage grows (scale / opacity increases)
+    if (foliage) {
+        const currentFoliageOpacity = 0.1 + (state.unlockedRings.length * 0.18);
+        foliage.setAttribute('opacity', currentFoliageOpacity.toString());
+    }
+
+    // 4. Flowers bloom at 100% health
+    if (flowers) {
+        flowers.setAttribute('opacity', healthPct === 100 ? '1' : '0');
+    }
+
+    // 5. Captain Planet summon visible at 100% health
+    if (capGlow && capPlanet) {
+        if (healthPct === 100) {
+            capGlow.setAttribute('opacity', '1');
+            capPlanet.setAttribute('opacity', '1');
+        } else {
+            capGlow.setAttribute('opacity', '0');
+            capPlanet.setAttribute('opacity', '0');
+        }
+    }
+}
+
+// ----------------- DECISION COPILOT MODALS -----------------
+function openDecisionModal(lens) {
+    const modal = document.getElementById('decision-modal');
+    const content = document.getElementById('modal-lens-content');
+    if (!modal || !content) return;
+
+    state.activeNudge = lens;
+    
+    let html = '';
+    
+    if (lens === 'food') {
+        html = `
+            <h3>🍔 Food Order Lens</h3>
+            <p class="section-desc">EcoSync is intercepting your food delivery cart (Zomato/Swiggy simulation). Make a choice:</p>
+            
+            <div class="mock-order-screen">
+                <span class="mock-title">ACTIVE DELIVERY BASKET</span>
+                <div class="mock-menu-grid">
+                    <div class="mock-menu-item" id="food-beef" onclick="triggerCarbonNudge('food', 'beef')">
+                        <div class="item-details">
+                            <span class="item-name">Pepperoni Beef Pizza 🍕🥩</span>
+                            <span class="item-desc">High industrial carbon emissions</span>
+                        </div>
+                        <span class="item-action-trigger">Select & Checkout</span>
+                    </div>
+                    <div class="mock-menu-item" id="food-chicken" onclick="triggerCarbonNudge('food', 'chicken')">
+                        <div class="item-details">
+                            <span class="item-name">Tandoori Chicken Roll 🌯</span>
+                            <span class="item-desc">Moderate poultry footprint</span>
+                        </div>
+                        <span class="item-action-trigger">Select & Checkout</span>
+                    </div>
+                    <div class="mock-menu-item" id="food-veg" onclick="triggerCarbonNudge('food', 'veg')">
+                        <div class="item-details">
+                            <span class="item-name">Paneer Tikka Veg Thali 🍲🥦</span>
+                            <span class="item-desc">Low emissions, plant-forward</span>
+                        </div>
+                        <span class="item-action-trigger">Select & Checkout</span>
+                    </div>
+                </div>
+                
+                <div id="active-nudge-box" style="display: none;"></div>
+            </div>
+        `;
+    } 
+    else if (lens === 'commute') {
+        html = `
+            <h3>🚗 Commute Route Lens</h3>
+            <p class="section-desc">Simulating destination mapping. Propose transit commute before you start the car:</p>
+            
+            <div class="mock-map-screen">
+                <span class="mock-title">ROUTING: HOME TO OFFICE (15 KM)</span>
+                <div class="mock-routes-list">
+                    <div class="mock-route-item" onclick="triggerCarbonNudge('commute', 'suv')">
+                        <div class="item-details">
+                            <span class="item-name">Drive gasoline SUV (Fastest)</span>
+                            <span class="route-details">Petrol engine • 15.6 kg CO2e</span>
+                        </div>
+                        <span class="item-action-trigger">Start Drive</span>
+                    </div>
+                    <div class="mock-route-item" onclick="triggerCarbonNudge('commute', 'transit')">
+                        <div class="item-details">
+                            <span class="item-name">Take Metro Line 2 (Bus / Train)</span>
+                            <span class="route-details">Clean grid rail • 1.1 kg CO2e</span>
+                        </div>
+                        <span class="item-action-trigger">Select Metro</span>
+                    </div>
+                    <div class="mock-route-item" onclick="triggerCarbonNudge('commute', 'active')">
+                        <div class="item-details">
+                            <span class="item-name">Cycle / Walk (Clean Air Route)</span>
+                            <span class="route-details">Zero Tailpipe • 0.0 kg CO2e</span>
+                        </div>
+                        <span class="item-action-trigger">Select Bike</span>
+                    </div>
+                </div>
+                
+                <div id="active-nudge-box" style="display: none;"></div>
+            </div>
+        `;
+    }
+    else if (lens === 'shopping') {
+        html = `
+            <h3>🛍️ Shopping Scanner</h3>
+            <p class="section-desc">Simulates scanning product labels or store shopping carts to inspect sustainability lifecycles:</p>
+            
+            <div class="mock-scanner-screen">
+                <span class="mock-title">ITEM SCANNER READOUT</span>
+                <div class="mock-menu-grid">
+                    <div class="mock-menu-item" onclick="triggerCarbonNudge('shopping', 'fastfashion')">
+                        <div class="item-details">
+                            <span class="item-name">Fast-Fashion Denim Jeans 👖</span>
+                            <span class="item-desc">Heavy water footprint, synthetic dye</span>
+                        </div>
+                        <span class="item-action-trigger">Scan Barcode</span>
+                    </div>
+                    <div class="mock-menu-item" onclick="triggerCarbonNudge('shopping', 'secondhand')">
+                        <div class="item-details">
+                            <span class="item-name">Vintage Upcycled Jacket 🧥</span>
+                            <span class="item-desc">Thrifted secondhand, zero build carbon</span>
+                        </div>
+                        <span class="item-action-trigger">Scan Barcode</span>
+                    </div>
+                </div>
+                
+                <div id="active-nudge-box" style="display: none;"></div>
+            </div>
+        `;
+    }
+    else if (lens === 'waste') {
+        html = `
+            <h3>♻️ Waste Classifier</h3>
+            <p class="section-desc">Classifies material waste using device cameras to guide recycling and composting sorting.</p>
+            
+            <div class="mock-scanner-screen">
+                <span class="mock-title">LENS DETECTOR VIEWPORT</span>
+                <button class="btn btn-primary" onclick="initiateSensorVerification('waste')">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="margin-right-sm"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    Open Live Camera Scanner
+                </button>
+            </div>
+        `;
+    }
+
+    content.innerHTML = html;
+    modal.style.display = 'flex';
+}
+
+function closeDecisionModal() {
+    document.getElementById('decision-modal').style.display = 'none';
+    state.activeNudge = null;
+}
+
+// ----------------- DYNAMIC NUDGES & SWAPS -----------------
+function triggerCarbonNudge(lens, selection) {
+    const nudgeBox = document.getElementById('active-nudge-box');
+    if (!nudgeBox) return;
+
+    let nudgeHTML = '';
+
+    if (lens === 'food') {
+        if (selection === 'beef') {
+            nudgeHTML = `
+                <div class="nudge-panel">
+                    <div class="nudge-header">⚠️ Carbon Copilot Alert</div>
+                    <p class="nudge-desc">Your choice (Pepperoni Beef Pizza) generates **22.4 kg CO2e**. Beef production requires 20x more land and emits 10x more greenhouse gases than plant alternatives.</p>
+                    <p class="nudge-desc">💡 **Planeteer Swap**: Margherita Veg Thali (**1.2 kg CO2**). Saves **21.2 kg** of CO2!</p>
+                    <div class="nudge-buttons">
+                        <button class="btn btn-primary btn-sm" onclick="acceptDecisionSwap('food', 'veg')">Accept Veg Swap ✅</button>
+                        <button class="btn btn-secondary btn-sm" onclick="rejectDecisionSwap('food')">Ignore Nudge ❌</button>
+                    </div>
+                </div>
+            `;
+        } 
+        else if (selection === 'chicken') {
+            nudgeHTML = `
+                <div class="nudge-panel">
+                    <div class="nudge-header">⚠️ Carbon Copilot Alert</div>
+                    <p class="nudge-desc">Chicken has lower emissions than beef, but still generates **5.8 kg CO2e**. </p>
+                    <p class="nudge-desc">💡 **Planeteer Swap**: Veg Thali (**1.2 kg CO2**). Saves **4.6 kg** of CO2!</p>
+                    <div class="nudge-buttons">
+                        <button class="btn btn-primary btn-sm" onclick="acceptDecisionSwap('food', 'veg')">Accept Veg Swap ✅</button>
+                        <button class="btn btn-secondary btn-sm" onclick="rejectDecisionSwap('food')">Ignore Nudge ❌</button>
+                    </div>
+                </div>
+            `;
+        }
+        else {
+            nudgeHTML = `
+                <div class="nudge-panel green-glow">
+                    <div class="nudge-header">🌿 Gaia Check Completed</div>
+                    <p class="nudge-desc">Veg Thali selected (**1.2 kg CO2**). This is a highly sustainable, low-carbon choice! Let's submit proof to unlock the **Water Ring**.</p>
+                    <div class="nudge-buttons">
+                        <button class="btn btn-primary btn-sm" onclick="initiateSensorVerification('food')">Submit Food Verification Proof</button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    else if (lens === 'commute') {
+        if (selection === 'suv') {
+            nudgeHTML = `
+                <div class="nudge-panel">
+                    <div class="nudge-header">⚠️ Carbon Copilot Alert</div>
+                    <p class="nudge-desc">Driving generates **15.6 kg CO2e**. Running a single-occupant gasoline SUV releases heavy tailpipe smog into the air.</p>
+                    <p class="nudge-desc">💡 **Planeteer Swap**: Take Metro Line 2 (**1.1 kg CO2**) or Cycle. Saves **14.5 kg** of CO2!</p>
+                    <div class="nudge-buttons">
+                        <button class="btn btn-primary btn-sm" onclick="acceptDecisionSwap('commute', 'transit')">Accept Metro Swap ✅</button>
+                        <button class="btn btn-secondary btn-sm" onclick="rejectDecisionSwap('commute')">Ignore Nudge ❌</button>
+                    </div>
+                </div>
+            `;
+        }
+        else {
+            const label = selection === 'transit' ? 'Metro Transit' : 'Active Cycling';
+            const value = selection === 'transit' ? '1.1 kg' : '0.0 kg';
+            nudgeHTML = `
+                <div class="nudge-panel green-glow">
+                    <div class="nudge-header">🌿 Gaia Check Completed</div>
+                    <p class="nudge-desc">${label} selected (${value} CO2). Great choice for clean air! Let's submit browser location or motion proof to activate the **Wind Ring**.</p>
+                    <div class="nudge-buttons">
+                        <button class="btn btn-primary btn-sm" onclick="initiateSensorVerification('commute')">Submit Commute Verification Proof</button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    else if (lens === 'shopping') {
+        if (selection === 'fastfashion') {
+            nudgeHTML = `
+                <div class="nudge-panel">
+                    <div class="nudge-header">⚠️ Carbon Copilot Alert</div>
+                    <p class="nudge-desc">Fast fashion jeans generate **25.0 kg CO2e** due to resource-heavy manufacturing, dyeing, and shipping.</p>
+                    <p class="nudge-desc">💡 **Planeteer Swap**: Vintage Upcycled thrift jacket (**1.5 kg CO2**). Saves **23.5 kg** of CO2!</p>
+                    <div class="nudge-buttons">
+                        <button class="btn btn-primary btn-sm" onclick="acceptDecisionSwap('shopping', 'secondhand')">Accept Vintage Swap ✅</button>
+                        <button class="btn btn-secondary btn-sm" onclick="rejectDecisionSwap('shopping')">Ignore Nudge ❌</button>
+                    </div>
+                </div>
+            `;
+        }
+        else {
+            nudgeHTML = `
+                <div class="nudge-panel green-glow">
+                    <div class="nudge-header">🌿 Gaia Check Completed</div>
+                    <p class="nudge-desc">Vintage Upcycled Jacket selected (**1.5 kg CO2**). Highly circular, low-waste choice! Let's scan purchase receipt to activate the **Heart Ring**.</p>
+                    <div class="nudge-buttons">
+                        <button class="btn btn-primary btn-sm" onclick="initiateSensorVerification('shopping')">Submit Purchase Verification Proof</button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    nudgeBox.innerHTML = nudgeHTML;
+    nudgeBox.style.display = 'block';
+}
+
+function acceptDecisionSwap(lens, swapOption) {
+    showToast("Planeteer Swap Accepted! Impact logged.");
+    triggerCarbonNudge(lens, swapOption);
+}
+
+function rejectDecisionSwap(lens) {
+    showToast("Choice ignored. Smog levels increased.");
+    addBotMessage("⚠️ **Gaia Warning**: A high-carbon decision was made without a swap. Smog particles have increased. Unlocking rings will help clear the air.");
+    
+    // increase smog visuals manually for a brief moment
+    const smog = document.getElementById('svg-smog');
+    if (smog) smog.setAttribute('opacity', '0.75');
+    
+    closeDecisionModal();
+    renderAll();
+}
+
+// ----------------- HARDWARE SENSOR VERIFICATIONS -----------------
+let localStream = null;
+
+function initiateSensorVerification(lens) {
+    closeDecisionModal();
+    const modal = document.getElementById('verify-modal');
+    const container = document.getElementById('verify-interface-container');
+    if (!modal || !container) return;
+
+    let html = '';
+
+    if (lens === 'food' || lens === 'waste' || lens === 'shopping') {
+        // Camera verification (live media getUserMedia)
+        html = `
+            <div class="mock-scanner-screen">
+                <span class="mock-title">CAMERA DETECTION FEED</span>
+                <div class="camera-feed-viewport">
+                    <video id="webcam-feed" autoplay playsinline muted></video>
+                    <div class="scanner-overlay">
+                        <div class="scanner-line"></div>
+                        <div class="scanner-corner top-left"></div>
+                        <div class="scanner-corner top-right"></div>
+                        <div class="scanner-corner bottom-left"></div>
+                        <div class="scanner-corner bottom-right"></div>
+                    </div>
+                </div>
+                <div class="progress-bar-bg" style="height: 6px;">
+                    <div class="progress-bar-fill" id="scan-progress" style="width: 0%"></div>
+                </div>
+                <span class="input-subtext text-center" id="scan-status">Opening camera stream...</span>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+        modal.style.display = 'flex';
+        
+        // Start webcam stream
+        startWebcamStream();
+        simulateProgressVerification('scan-progress', 'scan-status', 'Analyzing items...', 'Verification Match Approved! Recyclable/Eco-friendly item detected.', () => {
+            stopWebcamStream();
+            const elementToUnlock = lens === 'food' ? 'water' : (lens === 'waste' ? 'earth' : 'heart');
+            unlockRing(elementToUnlock);
+            closeVerifyModal();
+        });
+    }
+    else if (lens === 'commute') {
+        // Location Geolocation verification
+        html = `
+            <div class="mock-scanner-screen">
+                <span class="mock-title">GEOLOCATION GPS RECEIVER</span>
+                <div class="gps-coordinates-readout">
+                    <div class="gps-row"><span>CALIBRATING SATELLITES...</span><span class="blink">LOCK</span></div>
+                    <div class="gps-row"><span>LATITUDE:</span><span id="gps-lat">Capturing...</span></div>
+                    <div class="gps-row"><span>LONGITUDE:</span><span id="gps-lng">Capturing...</span></div>
+                    <div class="gps-row"><span>ACCURACY:</span><span id="gps-acc">Capturing...</span></div>
+                    <div class="gps-row"><span>STATUS:</span><span id="gps-status">Verifying nearby transit nodes...</span></div>
+                </div>
+                <div class="progress-bar-bg" style="height: 6px;">
+                    <div class="progress-bar-fill" id="gps-progress" style="width: 0%"></div>
+                </div>
+            </div>
+        `;
+        container.innerHTML = html;
+        modal.style.display = 'flex';
+
+        // Trigger real Geolocation API if available
+        captureRealGeolocation();
+        simulateProgressVerification('gps-progress', null, null, null, () => {
+            unlockRing('wind');
+            closeVerifyModal();
+        });
+    }
+
+    // Bind verification confirm button click
+    document.getElementById('btn-confirm-verify').onclick = () => {
+        stopWebcamStream();
+        // Fallback immediate unlock
+        const elementToUnlock = lens === 'food' ? 'water' : (lens === 'waste' ? 'earth' : (lens === 'commute' ? 'wind' : 'heart'));
+        unlockRing(elementToUnlock);
+        closeVerifyModal();
+    };
+}
+
+function startWebcamStream() {
+    const video = document.getElementById('webcam-feed');
+    if (!video) return;
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+            .then(stream => {
+                localStream = stream;
+                video.srcObject = stream;
+                video.play();
+            })
+            .catch(err => {
+                console.error("Camera access blocked", err);
+                document.getElementById('scan-status').textContent = "Camera blocked. Simulating capture view...";
+            });
+    }
+}
+
+function stopWebcamStream() {
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+    }
+}
+
+function captureRealGeolocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+            document.getElementById('gps-lat').textContent = position.coords.latitude.toFixed(6) + ' N';
+            document.getElementById('gps-lng').textContent = position.coords.longitude.toFixed(6) + ' E';
+            document.getElementById('gps-acc').textContent = position.coords.accuracy.toFixed(1) + ' meters';
+            document.getElementById('gps-status').textContent = "Aligned with local Metro Route Line! Transit confirmed.";
+        }, err => {
+            console.error("Geolocation failed", err);
+            // simulated coords
+            document.getElementById('gps-lat').textContent = "12.9716 N (Simulated)";
+            document.getElementById('gps-lng').textContent = "77.5946 E (Simulated)";
+            document.getElementById('gps-acc').textContent = "5.0 meters";
+            document.getElementById('gps-status').textContent = "Simulated Geolocation locked. Transit confirmed.";
+        });
+    }
+}
+
+function simulateProgressVerification(progressId, textId, initialText, successText, callback) {
+    const bar = document.getElementById(progressId);
+    let pct = 0;
+    const interval = setInterval(() => {
+        pct += 5;
+        if (bar) bar.style.width = pct + '%';
+        
+        if (pct === 35 && textId && initialText) {
+            document.getElementById(textId).textContent = initialText;
+        }
+
+        if (pct >= 100) {
+            clearInterval(interval);
+            if (textId && successText) {
+                document.getElementById(textId).textContent = successText;
+            }
+            setTimeout(callback, 500);
+        }
+    }, 150);
+}
+
+function closeVerifyModal() {
+    stopWebcamStream();
+    document.getElementById('verify-modal').style.display = 'none';
+}
+
+// ----------------- DOUGHNUT CHART RENDERER -----------------
 function renderDoughnutChart(emissions) {
     const svg = document.getElementById('svg-doughnut');
     const legend = document.getElementById('chart-legend');
     const overlayVal = document.getElementById('chart-overlay-value');
-    
     if (!svg || !legend) return;
 
-    // Filter values and calculate totals
     const categories = [
         { key: 'transport', label: 'Transport', color: 'var(--accent-blue)', val: emissions.transport },
-        { key: 'energy', label: 'Home Energy', color: 'var(--accent-orange)', val: emissions.energy },
-        { key: 'diet', label: 'Diet & Food', color: 'var(--accent-rose)', val: emissions.diet },
-        { key: 'waste', label: 'Habits/Waste', color: 'var(--primary)', val: emissions.waste }
+        { key: 'energy', label: 'Energy', color: 'var(--accent-orange)', val: emissions.energy },
+        { key: 'diet', label: 'Diet & Food', color: 'var(--color-water)', val: emissions.diet },
+        { key: 'waste', label: 'Waste', color: 'var(--primary)', val: emissions.waste }
     ];
 
     const totalVal = categories.reduce((sum, cat) => sum + cat.val, 0);
-    
-    // Draw SVG segments
-    // Circumference of radius 40 circle is 2 * Math.PI * 40 ≈ 251.327
     const C = 251.327;
     let accumulatedOffset = 0;
     
     // Clear old segments
-    const oldSegments = svg.querySelectorAll('.chart-segment');
-    oldSegments.forEach(s => s.remove());
-    
-    let chartHTML = '';
+    svg.querySelectorAll('.chart-segment').forEach(s => s.remove());
     let legendHTML = '';
-    
-    if (totalVal === 0) {
-        overlayVal.textContent = "0%";
-        legend.innerHTML = `<div class="empty-state">No tracked footprint. Enter data.</div>`;
-        return;
-    }
 
     categories.forEach(cat => {
         const pct = cat.val / totalVal;
         const dashLen = pct * C;
         const dashOffset = -accumulatedOffset;
         
-        // Inject SVG path segment
-        // stroke-dasharray = "dashLength totalLength"
         const path = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         path.setAttribute("class", "chart-segment");
         path.setAttribute("cx", "50");
@@ -712,23 +990,19 @@ function renderDoughnutChart(emissions) {
         path.setAttribute("stroke-width", "10");
         path.setAttribute("stroke-dasharray", `${dashLen} ${C}`);
         path.setAttribute("stroke-dashoffset", dashOffset.toString());
-        path.setAttribute("style", "transition: var(--transition-smooth);");
         
-        // Add hover labels
         path.addEventListener('mouseover', () => {
             overlayVal.textContent = `${Math.round(pct * 100)}%`;
             overlayVal.style.color = cat.color;
         });
         path.addEventListener('mouseout', () => {
-            overlayVal.textContent = `${Math.round((1 - (emissions.reductions / emissions.totalRaw)) * 100)}%`;
+            overlayVal.textContent = `${Math.max(0, Math.round((1 - (emissions.reductions / emissions.totalRaw)) * 100))}%`;
             overlayVal.style.color = 'var(--text-main)';
         });
 
         svg.appendChild(path);
-        
         accumulatedOffset += dashLen;
 
-        // Build legend
         legendHTML += `
             <div class="legend-item">
                 <span class="legend-color" style="background-color: ${cat.color}"></span>
@@ -739,22 +1013,19 @@ function renderDoughnutChart(emissions) {
     });
 
     legend.innerHTML = legendHTML;
-    
-    // Default center overlay shows the tracked % (excluding direct reductions)
-    const activeReductionPct = emissions.totalRaw > 0 ? (1 - (emissions.reductions / emissions.totalRaw)) * 100 : 100;
-    overlayVal.textContent = `${Math.max(0, Math.round(activeReductionPct))}%`;
+    const activePct = emissions.totalRaw > 0 ? (1 - (emissions.reductions / emissions.totalRaw)) * 100 : 100;
+    overlayVal.textContent = `${Math.max(0, Math.round(activePct))}%`;
     overlayVal.style.color = 'var(--text-main)';
 }
 
+// ----------------- HISTORICAL BAR CHART -----------------
 function renderHistoricalChart(emissions) {
     const container = document.getElementById('trend-bar-chart');
     if (!container) return;
 
-    // Last 3 weeks are pre-populated historical entries to show data trend
     const w1 = 12.4;
     const w2 = 10.8;
     const w3 = 9.2;
-    // Current projected footprint
     const w4 = emissions.totalProjected;
     
     const weeks = [
@@ -764,12 +1035,11 @@ function renderHistoricalChart(emissions) {
         { label: 'Current', val: w4, isCurrent: true }
     ];
 
-    const maxVal = Math.max(w1, w2, w3, w4, 15.0); // Baseline scale limit
+    const maxVal = Math.max(w1, w2, w3, w4, 15.0);
 
     let html = '';
     weeks.forEach(w => {
         const pctHeight = Math.max(5, (w.val / maxVal) * 100);
-        
         html += `
             <div class="trend-bar-container">
                 <div class="trend-bar" style="height: ${pctHeight}%; ${w.isCurrent ? '' : 'background: rgba(255, 255, 255, 0.08); border: 1px solid var(--border-color); opacity: 0.7;'}">
@@ -786,105 +1056,11 @@ function renderHistoricalChart(emissions) {
 function renderOffsetCard(emissions) {
     const offsetTrees = document.getElementById('offset-trees');
     if (!offsetTrees) return;
-
-    // 1 mature tree absorbs about 22 kg of CO2 per year = 0.022 tons.
-    // Trees needed = emissions.totalProjected / 0.022
     const treesNeeded = Math.round(emissions.totalProjected / 0.022);
     offsetTrees.textContent = treesNeeded.toLocaleString();
 }
 
-// ----------------- CHALLENGES ENGINE -----------------
-function renderChallengesList() {
-    const container = document.getElementById('challenges-container');
-    if (!container) return;
-
-    let html = '';
-    
-    CHALLENGES.forEach(c => {
-        const isCompleted = state.completedChallenges.includes(c.id);
-        
-        html += `
-            <div class="challenge-item ${isCompleted ? 'completed' : ''}" id="challenge-${c.id}">
-                <div class="challenge-checkbox ${isCompleted ? 'checked' : ''}" onclick="toggleChallenge('${c.id}')">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                </div>
-                <div class="challenge-info">
-                    <span class="challenge-title">${c.title}</span>
-                    <p class="challenge-desc">${c.desc}</p>
-                </div>
-                <div class="challenge-points-badge">
-                    <span class="challenge-pts">+${c.pts} pts</span>
-                    <span class="challenge-co2">-${c.co2} kg CO2e</span>
-                </div>
-            </div>
-        `;
-    });
-
-    container.innerHTML = html;
-
-    // Update pending challenges badge in sidebar
-    const pendingCount = CHALLENGES.length - state.completedChallenges.length;
-    const badge = document.getElementById('pending-challenges-badge');
-    if (badge) {
-        if (pendingCount > 0) {
-            badge.style.display = 'block';
-            badge.textContent = pendingCount.toString();
-        } else {
-            badge.style.display = 'none';
-        }
-    }
-}
-
-function toggleChallenge(id) {
-    const index = state.completedChallenges.indexOf(id);
-    const challenge = CHALLENGES.find(c => c.id === id);
-    
-    if (!challenge) return;
-
-    if (index === -1) {
-        // Complete challenge
-        state.completedChallenges.push(id);
-        state.points += challenge.pts;
-        showToast(`Challenge Met! +${challenge.pts} EcoPoints! 🎉`);
-        
-        // Add response in bot chat if active
-        addBotMessage(`Awesome job completing the **${challenge.title}** challenge! You saved **${challenge.co2} kg** of CO2 and earned **${challenge.pts} EcoPoints**. Keep it up! 🌟`);
-    } else {
-        // Uncheck challenge
-        state.completedChallenges.splice(index, 1);
-        state.points = Math.max(0, state.points - challenge.pts);
-        showToast(`Challenge undone. -${challenge.pts} EcoPoints.`);
-    }
-
-    saveState();
-    renderAll();
-}
-
-// ----------------- BADGES GRID RENDERER -----------------
-function renderBadgesGrid() {
-    const container = document.getElementById('badges-container');
-    if (!container) return;
-
-    let html = '';
-    
-    RANKS.forEach(rank => {
-        const isUnlocked = state.points >= rank.threshold;
-        
-        html += `
-            <div class="badge-card ${isUnlocked ? 'unlocked' : ''}">
-                <div class="badge-icon-wrapper">
-                    <span style="font-size: 1.75rem">${rank.icon}</span>
-                </div>
-                <span class="badge-name">${rank.name}</span>
-                <span class="badge-req">${isUnlocked ? 'Unlocked' : `Requires ${rank.threshold} pts`}</span>
-            </div>
-        `;
-    });
-
-    container.innerHTML = html;
-}
-
-// ----------------- PERSONALIZED INSIGHTS GENERATION -----------------
+// ----------------- PERSONALIZED INSIGHTS -----------------
 function generateInsights(emissions) {
     const container = document.getElementById('insights-panel');
     if (!container) return;
@@ -893,113 +1069,45 @@ function generateInsights(emissions) {
         emissions = calculateEmissions();
     }
 
-    // Threshold details
     const insights = [];
 
-    // Check if user has entered data (all direct baselines should not be 0)
-    if (emissions.totalRaw === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <p>No insights generated yet. Please enter your carbon habit logs or complete the EcoBot Onboarding Quiz to get personalized reduction strategies.</p>
-                <button class="btn btn-primary" onclick="switchTab('tracker')">Set Up Profile</button>
-            </div>
-        `;
-        return;
-    }
-
-    const h = state.habits;
-
-    // 1. High transport driver
-    if (emissions.transport > emissions.totalRaw * 0.4 && h.carDistance > 80 && h.ownsVehicle) {
-        const saving = (h.carDistance * 0.5 * 52 * 0.17).toFixed(0); // savings in kg if reduced by 50%
-        insights.push({
-            category: 'transport',
-            title: 'Reduce Car Travel',
-            desc: `Transport makes up ${Math.round((emissions.transport/emissions.totalRaw)*100)}% of your footprint. Commuting by walking, cycling, or transit just 2 days a week would prevent ~${saving} kg of CO2 emissions annually.`,
-            impact: `~${saving} kg/yr`
-        });
-    }
-
-    // 2. Flight driver
-    if (h.flights >= 3) {
-        const saving = 250; // short flight footprint
-        insights.push({
-            category: 'transport',
-            title: 'Choose Trains Over Short Flights',
-            desc: `You take ${h.flights} flights yearly. Swapping one short-haul flight for high-speed rail can reduce that trip's emissions by 85%.`,
-            impact: `-${saving} kg/trip`
-        });
-    }
-
-    // 3. Clean energy upgrade
-    if (h.cleanEnergyPct < 50 && h.electricityBill > 50) {
-        const potentialSaving = Math.round((emissions.energy * (1 - h.cleanEnergyPct/100)) * 0.8 * 1000);
-        insights.push({
-            category: 'energy',
-            title: 'Enroll in Clean Power Plan',
-            desc: `Your home power uses standard local grid electricity. Switching to 100% renewable grid options or installing solar panels can eliminate up to ${potentialSaving} kg of emissions annually.`,
-            impact: `~${potentialSaving} kg/yr`
-        });
-    }
-
-    // 4. Standby energy vampire
-    if (h.electricityBill > 80 && !state.completedChallenges.includes('unplug-vampires')) {
-        insights.push({
-            category: 'energy',
-            title: 'Slay Standby Vampire Power',
-            desc: 'Devices on standby make up 5-10% of household electricity bills. Try unplugging consoles, TVs, and microwave clocks at night or use smart power strips.',
-            impact: '~60 kg/yr'
-        });
-    }
-
-    // 5. Heavy Meat diet
-    if (h.dietType === 'heavy-meat' || h.dietType === 'medium-meat') {
-        const isHeavy = h.dietType === 'heavy-meat';
-        const reductionSaving = isHeavy ? 800 : 500; // saving if switching meat consumption down
+    if (!state.unlockedRings.includes('water')) {
         insights.push({
             category: 'food',
-            title: 'Adopt a Low-Carbon Diet',
-            desc: `Your diet carries a higher footprint. Shifting to low-meat or pescatarian alternatives (e.g. swapping beef/pork for poultry, fish, and legumes) can save up to ${reductionSaving} kg of CO2 annually.`,
-            impact: `~${reductionSaving} kg/yr`
+            title: 'Activate Water Element 💧',
+            desc: 'Your food choices represent a major carbon and water footprint. Swapping a beef meal for a veggie thali cuts carbon by 90% and saves water.',
+            impact: '💧 Water'
         });
     }
 
-    // 6. Food waste reduction
-    if (h.foodWaste > 15) {
-        const baseline = EMISSION_FACTORS.diet[h.dietType] || 1700;
-        const wasteSaving = Math.round(baseline * (h.foodWaste - 5)/100 * 0.5);
+    if (!state.unlockedRings.includes('wind')) {
         insights.push({
-            category: 'food',
-            title: 'Reduce Kitchen Food Waste',
-            desc: `You throw away ${h.foodWaste}% of your food. Plan weekly shopping list, store food properly, and compost scraps. Reducing waste to 5% prevents rotting organic trash emissions.`,
-            impact: `~${wasteSaving} kg/yr`
+            category: 'transport',
+            title: 'Activate Wind Element 💨',
+            desc: 'Daily commuting is releasing direct tailpipe emissions. Taking the metro or active cycling prevents smog in Gaia\'s atmosphere.',
+            impact: '💨 Wind'
         });
     }
 
-    // 7. Fast fashion
-    if (h.clothingPurchases >= 3) {
+    if (!state.unlockedRings.includes('fire')) {
         insights.push({
-            category: 'waste',
-            title: 'Curb Fast Fashion Purchases',
-            desc: 'Manufacturing new textiles generates heavy industrial carbon. Consider buying vintage, clothing swaps, or investing in higher quality items with longer wear life cycles.',
-            impact: `~${h.clothingPurchases * 5 * 12} kg/yr`
+            category: 'energy',
+            title: 'Activate Fire Element 🔥',
+            desc: 'Home energy standby use is a resource drain. Slide the Net-Zero Offset simulator to 50%+ or complete energy challenges to unlock.',
+            impact: '🔥 Fire'
         });
     }
 
-    // 8. Recycling boost
-    if (!h.recycleGlass || !h.recycleMetal) {
+    if (!state.unlockedRings.includes('earth')) {
         insights.push({
             category: 'waste',
-            title: 'Expand Recycling Sorting',
-            desc: 'Recycling aluminum cans and glass requires 95% less energy than processing virgin raw materials. Enable recycling bins for glass/metals in your home.',
-            impact: '~50 kg/yr'
+            title: 'Activate Earth Element 🪨',
+            desc: 'Circular waste sorting is required. Initiate the Live Camera Scanner in the Waste Lens to verify your recycling choices.',
+            impact: '🪨 Earth'
         });
     }
 
-    // Render insights
     let html = '';
-    
-    // Select top 3 relevant insights
     const topInsights = insights.slice(0, 3);
     
     if (topInsights.length === 0) {
@@ -1009,28 +1117,28 @@ function generateInsights(emissions) {
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                 </div>
                 <div class="insight-details">
-                    <h4>Excellent Carbon Score!</h4>
-                    <p>Your habits are highly optimized. Continue logging regularly, take on active challenges, and share your eco-badges on social media to inspire others!</p>
+                    <h4>All Planeteer Rings Active! 🦸‍♂️</h4>
+                    <p>Gaia is fully balanced! You have stabilized your carbon footprint. Continue monitoring your decision points and inspire other Planeteers!</p>
                 </div>
-                <span class="insight-impact">Top Tier 🌟</span>
+                <span class="insight-impact">Net Zero 🌿</span>
             </div>
         `;
     } else {
         topInsights.forEach(ins => {
             let svgIcon = '';
             if (ins.category === 'transport') {
-                svgIcon = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>';
+                svgIcon = '💨';
             } else if (ins.category === 'energy') {
-                svgIcon = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>';
+                svgIcon = '🔥';
             } else if (ins.category === 'food') {
-                svgIcon = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
+                svgIcon = '💧';
             } else {
-                svgIcon = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+                svgIcon = '🪨';
             }
 
             html += `
                 <div class="insight-card ${ins.category}">
-                    <div class="insight-icon">${svgIcon}</div>
+                    <div class="insight-icon" style="font-size: 1.5rem">${svgIcon}</div>
                     <div class="insight-details">
                         <h4>${ins.title}</h4>
                         <p>${ins.desc}</p>
@@ -1044,18 +1152,16 @@ function generateInsights(emissions) {
     container.innerHTML = html;
 }
 
-// ----------------- ECOBOT CHAT DIALOGUE ENGINE -----------------
+// ----------------- GAIA TERMINAL CHAT ENGINE -----------------
 function handleChatSubmit(e) {
     e.preventDefault();
     const input = document.getElementById('chat-input');
     const text = input.value.trim();
     if (!text) return;
 
-    // Add User Bubble
     addUserMessage(text);
     input.value = '';
 
-    // Trigger Bot Reply after short delay
     showTypingIndicator();
     setTimeout(() => {
         hideTypingIndicator();
@@ -1072,7 +1178,6 @@ function sendSuggestion(text) {
     }, 1000);
 }
 
-// Low-level DOM injection for chat messages
 function addUserMessage(text) {
     const messagesContainer = document.getElementById('chat-messages');
     if (!messagesContainer) return;
@@ -1088,7 +1193,6 @@ function addUserMessage(text) {
     messagesContainer.appendChild(wrapper);
     scrollToBottom();
 
-    // Store in history
     state.chatHistory.push({ sender: 'user', text: text });
     saveState();
 }
@@ -1109,9 +1213,7 @@ function addBotMessage(text, actions = []) {
         actionsHTML += `</div>`;
     }
 
-    // Convert markdownbold ** to HTML bold tags
     let formattedText = escapeHTML(text).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // Convert newlines to breaks
     formattedText = formattedText.replace(/\n/g, '<br>');
 
     wrapper.innerHTML = `
@@ -1124,7 +1226,6 @@ function addBotMessage(text, actions = []) {
     messagesContainer.appendChild(wrapper);
     scrollToBottom();
 
-    // Store in history
     state.chatHistory.push({ sender: 'bot', text: text, actions: actions });
     saveState();
 }
@@ -1170,11 +1271,9 @@ function clearChatHistory() {
     const messagesContainer = document.getElementById('chat-messages');
     if (messagesContainer) messagesContainer.innerHTML = '';
     
-    // Re-introduce greeting
-    addBotMessage("Hi! I'm EcoBot, your smart carbon assistant. 🌱\n\nI can help you understand your footprint, suggest personalized reductions, and log daily habits directly from our chat. \n\nWhere would you like to start?", [
-        { text: "Take Onboarding Quiz 📝", action: "start_quiz" },
-        { text: "Quick Footprint Check 📊", action: "analyze" },
-        { text: "Give me eco tips 💡", action: "tips" }
+    addBotMessage("Gaia Bot Terminal Reset. Ready to commune.", [
+        { text: "Play Planeteer Trivia 🧠", action: "start_trivia" },
+        { text: "Diagnose Footprint 📊", action: "analyze" }
     ]);
 }
 
@@ -1196,414 +1295,50 @@ function scrollToBottom() {
     }
 }
 
-// Bot Dialogue Processor (Main Logic Node)
+// Bot dialogue decision loop
 function processBotResponse(userInput) {
     const text = userInput.toLowerCase();
     
-    // Check if trivia game is active
     if (state.triviaState.active) {
         handleTriviaAnswer(userInput);
         return;
     }
-    
-    // Check if onboarding quiz is active
-    if (state.quizState.active) {
-        handleQuizProgress(userInput);
-        return;
-    }
 
-    // Check Trivia trigger
     if (text.includes('game') || text.includes('trivia') || text.includes('play')) {
         startTriviaGame();
         return;
     }
 
-    // 1. Check Onboarding trigger
-    if (text.includes('quiz') || text.includes('onboarding') || text.includes('start_quiz')) {
-        startOnboardingQuiz();
+    if (text.includes('summon') || text.includes('captain planet')) {
+        addBotMessage("To summon **Captain Planet**, you must activate all five rings. Choose decision lenses (Food, Commute, Shopping, Waste) on the dashboard and verify your actions! \n\n*\"By your powers combined, I am Captain Planet!\"*");
         return;
     }
 
-    // 2. Check Footprint analysis
-    if (text.includes('analyze') || text.includes('footprint') || text.includes('score') || text.includes('doughnut')) {
+    if (text.includes('analyze') || text.includes('footprint') || text.includes('diagnosis')) {
         const em = calculateEmissions();
-        const total = em.totalProjected.toFixed(1);
-        const transportPct = em.totalRaw > 0 ? Math.round(em.transport / em.totalRaw * 100) : 0;
-        const energyPct = em.totalRaw > 0 ? Math.round(em.energy / em.totalRaw * 100) : 0;
-        const dietPct = em.totalRaw > 0 ? Math.round(em.diet / em.totalRaw * 100) : 0;
-
-        let reply = `Your current carbon footprint is **${total} tons CO2e** per year. \n\nHere is your category breakdown:\n`;
-        reply += `🚗 **Transport**: ${em.transport.toFixed(1)} t (${transportPct}%)\n`;
-        reply += `⚡ **Home Energy**: ${em.energy.toFixed(1)} t (${energyPct}%)\n`;
-        reply += `🍲 **Food & Diet**: ${em.diet.toFixed(1)} t (${dietPct}%)\n`;
-        reply += `📦 **Habits & Waste**: ${em.waste.toFixed(1)} t (${Math.max(0, 100 - transportPct - energyPct - dietPct)}%)\n\n`;
-        
-        // Find biggest driver
-        let max = Math.max(em.transport, em.energy, em.diet, em.waste);
-        if (max === em.transport) {
-            reply += "💡 **Transport is your largest emission source.** Consider taking public transit, carpooling, or walking for shorter trips to save emissions.";
-        } else if (max === em.energy) {
-            reply += "💡 **Home Energy is your largest emission source.** Unplugging devices on standby, running laundry at 30°C, and using clean power offset plans would make a massive difference.";
-        } else if (max === em.diet) {
-            reply += "💡 **Diet is your largest emission source.** Swapping red meats (beef, lamb) for chicken or plant-based meals cuts food footprint by up to 60%.";
-        } else {
-            reply += "💡 **Indirect consumption / Waste is your largest source.** Shifting to secondhand shopping and boosting glass/plastic recycling will trim your score.";
-        }
-
+        const score = em.totalProjected.toFixed(1);
+        let reply = `Gaia Diagnosis: Your projected carbon footprint is **${score} tons CO2e** per year. \n\nActive Elements: **${state.unlockedRings.length}/5**\n`;
+        state.unlockedRings.forEach(r => {
+            reply += `✅ ${PLANETEER_ELEMENTS[r].name} (Active: -${PLANETEER_ELEMENTS[r].co2} kg CO2e/wk)\n`;
+        });
         addBotMessage(reply, [
-            { text: "Suggest a Challenge 🏆", action: "suggest_challenge" },
-            { text: "Log a custom trip 🚗", action: "log_trip_prompt" }
+            { text: "Explain Elements 🪨", action: "explain_elements" }
         ]);
         return;
     }
 
-    // 3. Tips suggestions
-    if (text.includes('tip') || text.includes('advice') || text.includes('help') || text.includes('suggest')) {
-        const em = calculateEmissions();
-        let max = Math.max(em.transport, em.energy, em.diet, em.waste);
-        
-        let reply = "Here are a few quick tips to start slicing your footprint:\n\n";
-        
-        if (max === em.transport) {
-            reply += "1. **Commute clean**: Telecommute when possible. Swapping a 10 km daily car ride for a bike ride prevents ~450 kg of CO2 per year.\n";
-            reply += "2. **Eco Driving**: Accelerate smoothly, maintain correct tire pressures, and empty cargo to save 10% on fuel bills.\n";
-            reply += "3. **Rail over flight**: Try high-speed train connections instead of regional short flights.";
-        } else if (max === em.energy) {
-            reply += "1. **Adjust temperatures**: Shifting your thermostat down 1°C in winter saves ~200 kg CO2/yr and saves on utility bills.\n";
-            reply += "2. **Cold Laundry**: Washing clothes in cold water (30°C/86°F) uses 75% less energy than hot cycles.\n";
-            reply += "3. **Unplug standbys**: Unplug TV boxes and computers when not in use.";
-        } else if (max === em.diet) {
-            reply += "1. **Adopt Meatless Days**: Skipping beef and pork just 2 days a week saves ~400 kg CO2/yr.\n";
-            reply += "2. **Reduce Kitchen Waste**: Plan meals and freeze leftovers. Food waste in landfills produces highly potent methane gas.\n";
-            reply += "3. **Buy local/seasonal**: Prevents heavy cargo transport emissions.";
-        } else {
-            reply += "1. **Circular Fashion**: Purchase vintage/thrifted garments. Making 1 brand new cotton t-shirt uses 2700 liters of water!\n";
-            reply += "2. **Repair over replace**: Keep cell phones and computers for at least 3-4 years.\n";
-            reply += "3. **Zero Waste**: Buy goods in bulk or choose minimal, plastic-free packaging.";
-        }
-
-        addBotMessage(reply, [
-            { text: "Commit to Challenges 🏆", action: "open_challenges" }
-        ]);
+    if (text.includes('tip') || text.includes('advice') || text.includes('help')) {
+        addBotMessage("Gaia's tip: Adjusting your offset contributions to 50%+ unlocks the **Fire Ring**. Eating less beef unlocks the **Water Ring**. Walking or cycling unlocks the **Wind Ring**!");
         return;
     }
 
-    // 4. Log savings shortcut
-    if (text.includes('log') && (text.includes('save') || text.includes('bike') || text.includes('walk') || text.includes('transit') || text.includes('km') || text.includes('mile'))) {
-        // Parse a distance
-        let kmMatch = text.match(/(\d+)\s*(km|kilometer|mile|mi)/);
-        let distance = 10; // default fallback
-        let unit = 'km';
-        
-        if (kmMatch) {
-            distance = parseInt(kmMatch[1]);
-            unit = kmMatch[2].startsWith('m') ? 'mile' : 'km';
-        }
-
-        if (unit === 'mile') {
-            distance = Math.round(distance * 1.609); // convert to km
-        }
-
-        // Calculate saved co2 compared to typical petrol sedan (0.17 kg/km)
-        const savedCo2 = (distance * 0.17).toFixed(1);
-
-        addBotMessage(`Awesome! Swapping a car drive for a **${distance} km** bike/walk/transit trip prevented approximately **${savedCo2} kg of CO2e** from entering the atmosphere. \n\nWould you like me to log this trip, which grants you **+15 EcoPoints**?`, [
-            { text: `Yes, Log it! ✅`, action: "log_saving_confirmed", param: `${savedCo2}` },
-            { text: "Cancel", action: "cancel" }
-        ]);
-        return;
-    }
-
-    // 5. Short keyword replies
-    if (text.includes('car') || text.includes('drive') || text.includes('gasoline') || text.includes('petrol') || text.includes('diesel')) {
-        addBotMessage("Commuting by personal combustion cars produces heavy tailpipe emissions. EVs and Hybrids represent a huge step forward, but active transit (walking, bicycling) is the cleanest option.\n\nYou can update your driving stats in the **Log Habits** tab at any time.");
-        return;
-    }
-
-    if (text.includes('vegan') || text.includes('diet') || text.includes('vegetarian') || text.includes('meat') || text.includes('food')) {
-        addBotMessage("Dietary choices have a major impact. Animal agriculture (especially cattle farming) requires intensive land use and emits substantial methane. Moving to plant-forward meals is a high-impact action!\n\nWould you like to try the **Meatless Days** challenge this week?", [
-            { text: "Commit to Challenge 🏆", action: "commit_challenge", param: "meatless-mon" }
-        ]);
-        return;
-    }
-
-    if (text.includes('solar') || text.includes('electricity') || text.includes('utility') || text.includes('energy')) {
-        addBotMessage("Switching to carbon-free solar/wind power is the most direct way to eliminate home emissions. You can contact your utility provider to see if they offer a 'Green Power Tariff', or enroll in a community solar array!");
-        return;
-    }
-
-    if (text.includes('recycling') || text.includes('plastic') || text.includes('waste')) {
-        addBotMessage("Recycling preserves the carbon energy embedded in materials. E.g., recycling aluminum saves 95% of energy needed for virgin smelting. Be sure to check the plastic codes accepted in your local curbside system.");
-        return;
-    }
-
-    // Fallback response
-    addBotMessage("I'm not fully sure how to answer that, but I can help you with: \n\n• Parsing logs (e.g. type *'I rode my bike 12 km today'*) \n• Footprint audits (*'Analyze my footprint'*) \n• Custom tips (*'Give me eco tips'*)\n• Onboarding (*'Take Onboarding Quiz'*)\n\nWhat would you like to explore?", [
-        { text: "Analyze footprint 📊", action: "analyze" },
-        { text: "Eco Tips 💡", action: "tips" }
+    addBotMessage("Gaia Terminal is online. I can assist with: \n\n• Trivia Game (*'Play Trivia'*)\n• EcoWorld Diagnoses (*'Diagnose Footprint'*)\n• Active Ring summaries\n\nWhat is your query, Planeteer?", [
+        { text: "Play Planeteer Trivia 🧠", action: "start_trivia" },
+        { text: "Diagnose Footprint 📊", action: "analyze" }
     ]);
 }
 
-// Onboarding Quiz State Machine
-function startOnboardingQuiz() {
-    state.quizState.active = true;
-    state.quizState.currentStep = 1;
-    state.quizState.tempData = {};
-    saveState();
-    
-    addBotMessage("Welcome to the **EcoSync Onboarding Quiz**! 📝\n\nI will ask you 5 simple questions to construct your initial carbon profile. Let's start:\n\n**Question 1**: How do you primarily travel for daily commuting? (Select one below)", [
-        { text: "🚗 Single-occupant Car", action: "quiz_ans", param: "car" },
-        { text: "🚌 Public Transit", action: "quiz_ans", param: "transit" },
-        { text: "🚲 Walking / Biking", action: "quiz_ans", param: "active" }
-    ]);
-}
-
-function handleQuizProgress(userInput) {
-    const step = state.quizState.currentStep;
-    
-    // We expect user to use the buttons. If they typed, we'll try to map it.
-    let val = userInput.toLowerCase();
-    
-    if (step === 1) {
-        state.quizState.tempData.commute = val.includes('transit') ? 'transit' : (val.includes('car') ? 'car' : 'active');
-        state.quizState.currentStep = 2;
-        saveState();
-
-        if (state.quizState.tempData.commute === 'car') {
-            addBotMessage("Got it. **Question 2**: What size vehicle do you drive?", [
-                { text: "Large SUV / Pickup", action: "quiz_ans", param: "suv" },
-                { text: "Standard Sedan", action: "quiz_ans", param: "sedan" },
-                { text: "Compact / EV / Hybrid", action: "quiz_ans", param: "hybrid" }
-            ]);
-        } else {
-            // Skip vehicle type for non-drivers
-            state.quizState.tempData.vehicle = 'none';
-            state.quizState.currentStep = 3;
-            saveState();
-            askDietQuestion();
-        }
-    }
-    else if (step === 2) {
-        state.quizState.tempData.vehicle = val;
-        state.quizState.currentStep = 3;
-        saveState();
-        askDietQuestion();
-    }
-    else if (step === 3) {
-        state.quizState.tempData.diet = val;
-        state.quizState.currentStep = 4;
-        saveState();
-        
-        addBotMessage("**Question 4**: Estimate your weekly travel distance (either driving or transit):", [
-            { text: "Low (< 50 km / 30 miles)", action: "quiz_ans", param: "50" },
-            { text: "Medium (50 - 200 km)", action: "quiz_ans", param: "150" },
-            { text: "High (200+ km)", action: "quiz_ans", param: "350" }
-        ]);
-    }
-    else if (step === 4) {
-        state.quizState.tempData.distance = parseInt(val) || 150;
-        state.quizState.currentStep = 5;
-        saveState();
-
-        addBotMessage("**Question 5**: Select your household's average monthly electricity bill:", [
-            { text: "Eco Friendly (< $50)", action: "quiz_ans", param: "40" },
-            { text: "Moderate ($50 - $120)", action: "quiz_ans", param: "80" },
-            { text: "High ($120+)", action: "quiz_ans", param: "160" }
-        ]);
-    }
-    else if (step === 5) {
-        state.quizState.tempData.electric = parseInt(val) || 80;
-        
-        // Finalize state changes!
-        applyQuizDataToHabits();
-        
-        state.quizState.active = false;
-        state.quizState.currentStep = 0;
-        state.points += 50; // Onboarding bonus
-        saveState();
-        
-        // Re-render
-        renderAll();
-
-        addBotMessage("🎉 **Carbon Profile Created!** \n\nI have configured your tracker with these initial estimates and granted you **+50 EcoPoints** as a welcome gift!\n\nSwitch to the **Dashboard** tab to check your personalized carbon scorecard.", [
-            { text: "View Dashboard 📊", action: "open_dashboard" },
-            { text: "Check Active Challenges 🏆", action: "open_challenges" }
-        ]);
-    }
-}
-
-function askDietQuestion() {
-    addBotMessage("**Question 3**: What describes your typical eating habits?", [
-        { text: "Meat Lover (Beef/pork regularly)", action: "quiz_ans", param: "heavy-meat" },
-        { text: "Balanced Meat/Poultry/Fish", action: "quiz_ans", param: "medium-meat" },
-        { text: "Vegetarian / Vegan", action: "quiz_ans", param: "vegan" }
-    ]);
-}
-
-function applyQuizDataToHabits() {
-    const q = state.quizState.tempData;
-    const h = state.habits;
-
-    // Apply commute
-    if (q.commute === 'car') {
-        h.ownsVehicle = true;
-        h.carDistance = q.distance || 100;
-        h.publicTransit = 0;
-        
-        if (q.vehicle === 'suv') {
-            h.vehicleType = 'suv';
-            h.fuelType = 'petrol';
-        } else if (q.vehicle === 'hybrid') {
-            h.vehicleType = 'compact';
-            h.fuelType = 'hybrid';
-        } else {
-            h.vehicleType = 'sedan';
-            h.fuelType = 'petrol';
-        }
-    } else if (q.commute === 'transit') {
-        h.ownsVehicle = false;
-        h.carDistance = 0;
-        h.publicTransit = Math.round((q.distance || 100) / 30); // 30 km/h avg speed
-    } else {
-        h.ownsVehicle = false;
-        h.carDistance = 0;
-        h.publicTransit = 0;
-    }
-
-    // Apply diet
-    h.dietType = q.diet || 'medium-meat';
-    
-    // Apply energy
-    h.electricityBill = q.electric || 80;
-    h.gasBill = Math.round(h.electricityBill * 0.4); // rough approximation
-    h.cleanEnergyPct = 0;
-    h.householdMembers = 2; // default avg
-}
-
-// Handle action triggers from chat buttons
-function handleChatAction(action, param) {
-    // Log user response representation
-    const textLabel = document.querySelector(`[onclick*="${action}"][onclick*="${param}"]`);
-    const actionText = textLabel ? textLabel.textContent : `Selected action: ${action}`;
-    
-    addUserMessage(actionText);
-    showTypingIndicator();
-
-    setTimeout(() => {
-        hideTypingIndicator();
-        
-        if (action === "start_quiz") {
-            startOnboardingQuiz();
-        } 
-        else if (action === "start_trivia") {
-            startTriviaGame();
-        }
-        else if (action === "trivia_ans") {
-            handleTriviaAnswer(param);
-        }
-        else if (action === "analyze") {
-            processBotResponse("analyze footprint");
-        } 
-        else if (action === "tips") {
-            processBotResponse("give eco tips");
-        }
-        else if (action === "quiz_ans") {
-            handleQuizProgress(param);
-        }
-        else if (action === "suggest_challenge") {
-            // Find a challenge not yet completed
-            const pending = CHALLENGES.find(c => !state.completedChallenges.includes(c.id));
-            if (pending) {
-                addBotMessage(`I recommend taking on the **${pending.title}** challenge:\n\n*${pending.desc}*\n\nCompleting it reduces your projected carbon footprint by **${pending.co2} kg/week** and awards **${pending.pts} EcoPoints**!`, [
-                    { text: "Commit to Challenge 🏆", action: "commit_challenge", param: pending.id },
-                    { text: "Show all challenges", action: "open_challenges" }
-                ]);
-            } else {
-                addBotMessage("Amazing! You have completed all our active eco-challenges! You're a true climate champion! 🌍🌱");
-            }
-        }
-        else if (action === "log_trip_prompt") {
-            addBotMessage("To calculate trip emissions, type something like:\n\n*\"I logged 15 km bike commute today\"*\nor *\"I drove 80 miles in a car\"*");
-        }
-        else if (action === "log_saving_confirmed") {
-            state.points += 15;
-            // Also deduct carbon directly by adding to general savings impact
-            // For simplicity, we just save points and trigger a toast
-            saveState();
-            renderAll();
-            showToast(`Logged carbon savings! +15 EcoPoints! 🚲`);
-            addBotMessage("Awesome! Carbon savings logged. Check your updated points tally in the upper right. Keep traveling green! 💚");
-        }
-        else if (action === "commit_challenge") {
-            if (!state.completedChallenges.includes(param)) {
-                toggleChallenge(param);
-            } else {
-                addBotMessage("You have already completed that challenge!");
-            }
-        }
-        else if (action === "open_challenges") {
-            switchTab('challenges');
-            addBotMessage("Switched to the **Challenges** tab. Take a look at your current goals!");
-        }
-        else if (action === "open_dashboard") {
-            switchTab('dashboard');
-            addBotMessage("Switched to your **Dashboard**. Look at those green charts! 📊");
-        }
-        else if (action === "cancel") {
-            addBotMessage("No problem. Let me know if you need anything else!");
-        }
-    }, 1000);
-}
-
-// ----------------- UI UTILITIES -----------------
-function showToast(msg) {
-    const toast = document.getElementById('toast-notification');
-    const toastMsg = document.getElementById('toast-message');
-    if (toast && toastMsg) {
-        toastMsg.textContent = msg;
-        toast.style.display = 'flex';
-        
-        // Hide after 3.5 seconds
-        setTimeout(() => {
-            toast.style.display = 'none';
-        }, 3500);
-    }
-}
-
-function escapeHTML(str) {
-    return str.replace(/[&<>'"]/g, 
-        tag => ({
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            "'": '&#39;',
-            '"': '&quot;'
-        }[tag] || tag)
-    );
-}
-
-// ----------------- TRIVIA GAME ENGINE -----------------
-const TRIVIA_QUESTIONS = [
-    {
-        q: "What percentage of global greenhouse gas emissions come from food production?",
-        options: ["A) 10%", "B) 26%", "C) 50%"],
-        correct: "b",
-        explain: "Food production accounts for about 26% of global emissions, with livestock representing a large portion of that."
-    },
-    {
-        q: "Which transit method has the lowest carbon footprint per passenger-kilometer?",
-        options: ["A) Electric Train", "B) Electric Car (EV)", "C) Diesel Bus"],
-        correct: "a",
-        explain: "Electric rail/train transit is extremely energy-efficient and has the lowest emissions per passenger km."
-    },
-    {
-        q: "How much carbon dioxide does an average mature tree absorb per year?",
-        options: ["A) 5 kg", "B) 22 kg", "C) 100 kg"],
-        correct: "b",
-        explain: "A mature tree absorbs roughly 22 kg (48 lbs) of carbon dioxide annually from the atmosphere."
-    }
-];
-
+// ----------------- TRIVIA GAME LOOP -----------------
 function startTriviaGame() {
     state.triviaState.active = true;
     state.triviaState.questionIndex = 0;
@@ -1615,7 +1350,7 @@ function askTriviaQuestion() {
     const qIndex = state.triviaState.questionIndex;
     const qData = TRIVIA_QUESTIONS[qIndex];
     
-    addBotMessage(`🌱 **Eco-Trivia Question ${qIndex + 1}/3**:\n\n${qData.q}`, [
+    addBotMessage(`🌱 **Planeteer Trivia ${qIndex + 1}/3**:\n\n${qData.q}`, [
         { text: qData.options[0], action: "trivia_ans", param: "a" },
         { text: qData.options[1], action: "trivia_ans", param: "b" },
         { text: qData.options[2], action: "trivia_ans", param: "c" }
@@ -1626,15 +1361,11 @@ function handleTriviaAnswer(userInput) {
     const qIndex = state.triviaState.questionIndex;
     const qData = TRIVIA_QUESTIONS[qIndex];
     
-    // Parse choice (a, b, c) from text
     let ans = userInput.toLowerCase().trim();
     if (ans.startsWith('a') || ans.includes('10%') || ans.includes('train')) ans = 'a';
     else if (ans.startsWith('b') || ans.includes('26%') || ans.includes('22')) ans = 'b';
     else if (ans.startsWith('c') || ans.includes('50%') || ans.includes('bus') || ans.includes('100')) ans = 'c';
-    else {
-        // Fallback to what was passed or a guess
-        ans = ans.charAt(0);
-    }
+    else ans = ans.charAt(0);
 
     if (ans === qData.correct) {
         state.points += 20;
@@ -1655,10 +1386,80 @@ function handleTriviaAnswer(userInput) {
             state.triviaState.active = false;
             state.triviaState.questionIndex = 0;
             saveState();
-            addBotMessage("🎉 **Trivia Game Completed!** Thanks for playing. Check out your points and rank on the dashboard! 🌍🌱", [
+            addBotMessage("🎉 **Trivia completed!** Go Planet! The power is yours! 🌍", [
                 { text: "View Dashboard 📊", action: "open_dashboard" },
-                { text: "Suggest eco tips 💡", action: "tips" }
+                { text: "Ask Gaia for tips 💡", action: "tips" }
             ]);
         }
     }, 3000);
 }
+
+// Handle chat actions
+function handleChatAction(action, param) {
+    addUserMessage(`Selected: ${action} ${param ? '('+param+')' : ''}`);
+    showTypingIndicator();
+
+    setTimeout(() => {
+        hideTypingIndicator();
+        
+        if (action === "start_trivia") {
+            startTriviaGame();
+        }
+        else if (action === "trivia_ans") {
+            handleTriviaAnswer(param);
+        }
+        else if (action === "analyze") {
+            processBotResponse("analyze footprint");
+        }
+        else if (action === "tips") {
+            processBotResponse("give eco tips");
+        }
+        else if (action === "open_dashboard") {
+            switchTab('lens');
+        }
+        else if (action === "explain_elements") {
+            let desc = "**Planeteer Elements Summary**:\n\n";
+            Object.keys(PLANETEER_ELEMENTS).forEach(key => {
+                const el = PLANETEER_ELEMENTS[key];
+                desc += `• **${el.name}** ${el.icon}: ${el.task} (+${el.pts} pts, -${el.co2} kg CO2e)\n`;
+            });
+            addBotMessage(desc);
+        }
+    }, 1000);
+}
+
+// ----------------- UI UTILITIES -----------------
+function showToast(msg) {
+    const toast = document.getElementById('toast-notification');
+    const toastMsg = document.getElementById('toast-message');
+    if (toast && toastMsg) {
+        toastMsg.textContent = msg;
+        toast.style.display = 'flex';
+        setTimeout(() => { toast.style.display = 'none'; }, 3500);
+    }
+}
+
+function escapeHTML(str) {
+    return str.replace(/[&<>'"]/g, 
+        tag => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[tag] || tag)
+    );
+}
+
+// Legacy helpers mapping
+const RANKS = [
+    { name: 'Planeteer Cadet', threshold: 0, icon: '🌱' },
+    { name: 'Earth Ranger', threshold: 100, icon: '✂️' },
+    { name: 'Eco Defender', threshold: 250, icon: '🛡️' },
+    { name: 'Planet Guardian', threshold: 450, icon: '🌍' },
+    { name: 'Captain Planet Summoner', threshold: 700, icon: '🦸‍♂️' }
+];
+
+const EMISSION_FACTORS = {
+    regionalAverages: { us: 15.5, eu: 6.5, in: 1.9, global: 4.8 }
+};
