@@ -440,7 +440,7 @@ function updateColorMyWorldCard() {
         worldImg.style.filter = `grayscale(${grayscalePercentage}%)`;
 
         if (unlockedCount === 5) {
-            progressText.textContent = "🌈 100% RESTORED (YOUR WORLD IS VIBRANT!)";
+            progressText.textContent = "🌈 Your world is restored. Every small action brought color back.";
             imageFrame.classList.add('fully-restored');
 
             // Celebration trigger
@@ -448,10 +448,11 @@ function updateColorMyWorldCard() {
                 state.worldCelebrated = true;
                 saveState();
                 playSummonSFX();
+                triggerConfettiCelebration();
                 
                 // Trigger Gaia Bot congratulatory message
                 setTimeout(() => {
-                    addBotMessage("🎉 AMAZING JOB, PLANETEER! Your world has returned to full, vibrant color! 🌈\n\nYour choices in food swaps, active commutes, recycling, and conservation have direct power. By uniting the 5 rings, you summoned Captain Planet and protected what you love! Keep up the real-world action! 🦸‍♂️🌍", [
+                    addBotMessage("🎉 AMAZING JOB, PLANETEER! Your world has returned to full, vibrant color! 🌈\n\nYour choices in food swaps, active commutes, recycling, energy conservation, and shopping have direct power. By uniting the 5 rings, you summoned Captain Planet and protected what you love! Keep up the real-world action! 🦸‍♂️🌍", [
                         { text: "Summon Captain Planet Again ⚡", action: "summon_flourish" },
                         { text: "Review Console Log 📊", action: "tips" }
                     ]);
@@ -468,6 +469,66 @@ function updateColorMyWorldCard() {
         progressText.textContent = 'Grayscale (0% Restored)';
         imageFrame.classList.remove('fully-restored');
     }
+}
+
+// Particle/confetti burst on hidden canvas overlay
+function triggerConfettiCelebration() {
+    const canvas = document.getElementById('world-celebration-canvas');
+    if (!canvas) return;
+
+    // Set canvas dimensions based on its bounding box
+    canvas.width = canvas.offsetWidth || 300;
+    canvas.height = canvas.offsetHeight || 225;
+
+    const ctx = canvas.getContext('2d');
+    const particles = [];
+    const colors = ['#10b981', '#ef4444', '#38bdf8', '#2563eb', '#ec4899', '#fef08a'];
+
+    // Create particles
+    for (let i = 0; i < 80; i++) {
+        particles.push({
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            vx: (Math.random() - 0.5) * 8,
+            vy: (Math.random() - 0.5) * 8 - 3, // slightly upward
+            size: Math.random() * 5 + 3,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            alpha: 1,
+            decay: Math.random() * 0.02 + 0.015
+        });
+    }
+
+    let animationFrameId;
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        let active = false;
+        particles.forEach(p => {
+            if (p.alpha > 0) {
+                active = true;
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.1; // gravity
+                p.alpha -= p.decay;
+                
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        });
+
+        if (active) {
+            animationFrameId = requestAnimationFrame(animate);
+        } else {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    }
+
+    animate();
 }
 
 
@@ -829,10 +890,60 @@ function openDecisionModal(lens) {
             
             <div class="mock-scanner-screen">
                 <span class="mock-title">LENS DETECTOR VIEWPORT</span>
-                <button class="btn btn-primary" onclick="initiateSensorVerification('waste')">
+                <button class="btn btn-primary" onclick="triggerCarbonNudge('waste', 'detect')">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="margin-right-sm"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                     Open Live Camera Scanner
                 </button>
+                <div id="active-nudge-box" style="display: none; margin-top: 1rem;"></div>
+            </div>
+        `;
+    }
+    else if (lens === 'energy') {
+        html = `
+            <h3>⚡ Energy Saver Lens</h3>
+            <p class="section-desc">Intercept high electricity load decisions. Choose a clean energy action to verify and save CO2:</p>
+            
+            <div class="mock-order-screen">
+                <span class="mock-title">ACTIVE POWER OUTLET SELECTOR</span>
+                <div class="mock-menu-grid">
+                    <div class="mock-menu-item" onclick="triggerCarbonNudge('energy', 'standby')">
+                        <div class="item-details">
+                            <span class="item-name">Turn off Standby Appliances 🔌</span>
+                            <span class="item-desc">Cuts vampire draw of idle electronics</span>
+                        </div>
+                        <span class="item-action-trigger">Select Action</span>
+                    </div>
+                    <div class="mock-menu-item" onclick="triggerCarbonNudge('energy', 'ac')">
+                        <div class="item-details">
+                            <span class="item-name">Set AC to 24–26°C ❄️</span>
+                            <span class="item-desc">Optimal energy saving thermostat setting</span>
+                        </div>
+                        <span class="item-action-trigger">Select Action</span>
+                    </div>
+                    <div class="mock-menu-item" onclick="triggerCarbonNudge('energy', 'naturallight')">
+                        <div class="item-details">
+                            <span class="item-name">Use Natural Light ☀️</span>
+                            <span class="item-desc">Turn off overhead lamps during daytime</span>
+                        </div>
+                        <span class="item-action-trigger">Select Action</span>
+                    </div>
+                    <div class="mock-menu-item" onclick="triggerCarbonNudge('energy', 'unplug')">
+                        <div class="item-details">
+                            <span class="item-name">Unplug Charger Adapters 🔋</span>
+                            <span class="item-desc">Stops energy leak from wall plugs</span>
+                        </div>
+                        <span class="item-action-trigger">Select Action</span>
+                    </div>
+                    <div class="mock-menu-item" onclick="triggerCarbonNudge('energy', 'fan')">
+                        <div class="item-details">
+                            <span class="item-name">Use Fan instead of AC for 1 Hour 🪭</span>
+                            <span class="item-desc">Saves ~90% power compared to AC compressor</span>
+                        </div>
+                        <span class="item-action-trigger">Select Action</span>
+                    </div>
+                </div>
+                
+                <div id="active-nudge-box" style="display: none;"></div>
             </div>
         `;
     }
@@ -847,108 +958,210 @@ function closeDecisionModal() {
 }
 
 // ----------------- DYNAMIC NUDGES & SWAPS -----------------
+function runAgentTimeline(lens, selection, callback) {
+    const nudgeBox = document.getElementById('active-nudge-box');
+    if (!nudgeBox) {
+        callback();
+        return;
+    }
+
+    nudgeBox.style.display = 'block';
+    nudgeBox.innerHTML = `
+        <div class="agent-timeline-container">
+            <div class="agent-timeline-title">🤖 Active Multi-Agent Pipeline:</div>
+            <div class="agent-timeline">
+                <div class="agent-step" id="step-context"><span class="step-dot"></span>Context Agent</div>
+                <div class="agent-arrow">➔</div>
+                <div class="agent-step" id="step-carbon"><span class="step-dot"></span>Carbon Agent</div>
+                <div class="agent-arrow">➔</div>
+                <div class="agent-step" id="step-swap"><span class="step-dot"></span>Swap Agent</div>
+                <div class="agent-arrow">➔</div>
+                <div class="agent-step" id="step-nudge"><span class="step-dot"></span>Nudge Agent</div>
+                <div class="agent-arrow">➔</div>
+                <div class="agent-step" id="step-verify"><span class="step-dot"></span>Verification Agent</div>
+                <div class="agent-arrow">➔</div>
+                <div class="agent-step" id="step-gaia"><span class="step-dot"></span>Gaia Agent</div>
+            </div>
+        </div>
+    `;
+
+    const steps = ['context', 'carbon', 'swap', 'nudge', 'verify', 'gaia'];
+    let currentIdx = 0;
+
+    function nextStep() {
+        if (currentIdx > 0) {
+            const prevStep = document.getElementById(`step-${steps[currentIdx - 1]}`);
+            if (prevStep) {
+                prevStep.classList.remove('active');
+                prevStep.classList.add('completed');
+            }
+        }
+        if (currentIdx < steps.length) {
+            const currStep = document.getElementById(`step-${steps[currentIdx]}`);
+            if (currStep) {
+                currStep.classList.add('active');
+            }
+            currentIdx++;
+            playAgentTickSound();
+            setTimeout(nextStep, 200); // 200ms per step animation
+        } else {
+            callback();
+        }
+    }
+
+    nextStep();
+}
+
+function playAgentTickSound() {
+    initAudio();
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1600, now);
+    gain.gain.setValueAtTime(0.015, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.05);
+}
+
 function triggerCarbonNudge(lens, selection) {
     const nudgeBox = document.getElementById('active-nudge-box');
     if (!nudgeBox) return;
 
-    let nudgeHTML = '';
+    runAgentTimeline(lens, selection, () => {
+        let nudgeHTML = '';
 
-    if (lens === 'food') {
-        if (selection === 'beef') {
-            nudgeHTML = `
-                <div class="nudge-panel">
-                    <div class="nudge-header">⚠️ Carbon Copilot Alert</div>
-                    <p class="nudge-desc">Your choice (Pepperoni Beef Pizza) generates **22.4 kg CO2e**. Beef production requires 20x more land and emits 10x more greenhouse gases than plant alternatives.</p>
-                    <p class="nudge-desc">💡 **Planeteer Swap**: Margherita Veg Thali (**1.2 kg CO2**). Saves **21.2 kg** of CO2!</p>
-                    <div class="nudge-buttons">
-                        <button class="btn btn-primary btn-sm" onclick="acceptDecisionSwap('food', 'veg')">Accept Veg Swap ✅</button>
-                        <button class="btn btn-secondary btn-sm" onclick="rejectDecisionSwap('food')">Ignore Nudge ❌</button>
+        if (lens === 'food') {
+            if (selection === 'beef') {
+                nudgeHTML = `
+                    <div class="nudge-panel">
+                        <div class="nudge-header">⚠️ Carbon Copilot Alert</div>
+                        <p class="nudge-desc">Your choice (Pepperoni Beef Pizza) generates **22.4 kg CO2e**. Beef production requires 20x more land and emits 10x more greenhouse gases than plant alternatives.</p>
+                        <p class="nudge-desc">💡 **Planeteer Swap**: Margherita Veg Thali (**1.2 kg CO2**). Saves **21.2 kg** of CO2!</p>
+                        <div class="nudge-buttons">
+                            <button class="btn btn-primary btn-sm" onclick="acceptDecisionSwap('food', 'veg')">Accept Veg Swap ✅</button>
+                            <button class="btn btn-secondary btn-sm" onclick="rejectDecisionSwap('food')">Ignore Nudge ❌</button>
+                        </div>
                     </div>
-                </div>
-            `;
-        } 
-        else if (selection === 'chicken') {
-            nudgeHTML = `
-                <div class="nudge-panel">
-                    <div class="nudge-header">⚠️ Carbon Copilot Alert</div>
-                    <p class="nudge-desc">Chicken has lower emissions than beef, but still generates **5.8 kg CO2e**. </p>
-                    <p class="nudge-desc">💡 **Planeteer Swap**: Veg Thali (**1.2 kg CO2**). Saves **4.6 kg** of CO2!</p>
-                    <div class="nudge-buttons">
-                        <button class="btn btn-primary btn-sm" onclick="acceptDecisionSwap('food', 'veg')">Accept Veg Swap ✅</button>
-                        <button class="btn btn-secondary btn-sm" onclick="rejectDecisionSwap('food')">Ignore Nudge ❌</button>
+                `;
+            } 
+            else if (selection === 'chicken') {
+                nudgeHTML = `
+                    <div class="nudge-panel">
+                        <div class="nudge-header">⚠️ Carbon Copilot Alert</div>
+                        <p class="nudge-desc">Chicken has lower emissions than beef, but still generates **5.8 kg CO2e**. </p>
+                        <p class="nudge-desc">💡 **Planeteer Swap**: Veg Thali (**1.2 kg CO2**). Saves **4.6 kg** of CO2!</p>
+                        <div class="nudge-buttons">
+                            <button class="btn btn-primary btn-sm" onclick="acceptDecisionSwap('food', 'veg')">Accept Veg Swap ✅</button>
+                            <button class="btn btn-secondary btn-sm" onclick="rejectDecisionSwap('food')">Ignore Nudge ❌</button>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
+            else {
+                nudgeHTML = `
+                    <div class="nudge-panel green-glow">
+                        <div class="nudge-header">🌿 Gaia Check Completed</div>
+                        <p class="nudge-desc">Veg Thali selected (**1.2 kg CO2**). This is a highly sustainable, low-carbon choice! Let's submit proof to unlock the **Water Ring**.</p>
+                        <div class="nudge-buttons">
+                            <button class="btn btn-primary btn-sm" onclick="initiateSensorVerification('food')">Submit Food Verification Proof</button>
+                        </div>
+                    </div>
+                `;
+            }
         }
-        else {
+        else if (lens === 'commute') {
+            if (selection === 'suv') {
+                nudgeHTML = `
+                    <div class="nudge-panel">
+                        <div class="nudge-header">⚠️ Carbon Copilot Alert</div>
+                        <p class="nudge-desc">Driving generates **15.6 kg CO2e**. Running a single-occupant gasoline SUV releases heavy tailpipe smog into the air.</p>
+                        <p class="nudge-desc">💡 **Planeteer Swap**: Take Metro Line 2 (**1.1 kg CO2**) or Cycle. Saves **14.5 kg** of CO2!</p>
+                        <div class="nudge-buttons">
+                            <button class="btn btn-primary btn-sm" onclick="acceptDecisionSwap('commute', 'transit')">Accept Metro Swap ✅</button>
+                            <button class="btn btn-secondary btn-sm" onclick="rejectDecisionSwap('commute')">Ignore Nudge ❌</button>
+                        </div>
+                    </div>
+                `;
+            }
+            else {
+                const label = selection === 'transit' ? 'Metro Transit' : 'Active Cycling';
+                const value = selection === 'transit' ? '1.1 kg' : '0.0 kg';
+                nudgeHTML = `
+                    <div class="nudge-panel green-glow">
+                        <div class="nudge-header">🌿 Gaia Check Completed</div>
+                        <p class="nudge-desc">${label} selected (${value} CO2). Great choice for clean air! Let's submit browser location or motion proof to activate the **Wind Ring**.</p>
+                        <div class="nudge-buttons">
+                            <button class="btn btn-primary btn-sm" onclick="initiateSensorVerification('commute')">Submit Commute Verification Proof</button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        else if (lens === 'shopping') {
+            if (selection === 'fastfashion') {
+                nudgeHTML = `
+                    <div class="nudge-panel">
+                        <div class="nudge-header">⚠️ Carbon Copilot Alert</div>
+                        <p class="nudge-desc">Fast fashion jeans generate **25.0 kg CO2e** due to resource-heavy manufacturing, dyeing, and shipping.</p>
+                        <p class="nudge-desc">💡 **Planeteer Swap**: Vintage Upcycled thrift jacket (**1.5 kg CO2**). Saves **23.5 kg** of CO2!</p>
+                        <div class="nudge-buttons">
+                            <button class="btn btn-primary btn-sm" onclick="acceptDecisionSwap('shopping', 'secondhand')">Accept Vintage Swap ✅</button>
+                            <button class="btn btn-secondary btn-sm" onclick="rejectDecisionSwap('shopping')">Ignore Nudge ❌</button>
+                        </div>
+                    </div>
+                `;
+            }
+            else {
+                nudgeHTML = `
+                    <div class="nudge-panel green-glow">
+                        <div class="nudge-header">🌿 Gaia Check Completed</div>
+                        <p class="nudge-desc">Vintage Upcycled Jacket selected (**1.5 kg CO2**). Highly circular, low-waste choice! Let's scan purchase receipt to activate the **Heart Ring**.</p>
+                        <div class="nudge-buttons">
+                            <button class="btn btn-primary btn-sm" onclick="initiateSensorVerification('shopping')">Submit Purchase Verification Proof</button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        else if (lens === 'waste') {
             nudgeHTML = `
                 <div class="nudge-panel green-glow">
                     <div class="nudge-header">🌿 Gaia Check Completed</div>
-                    <p class="nudge-desc">Veg Thali selected (**1.2 kg CO2**). This is a highly sustainable, low-carbon choice! Let's submit proof to unlock the **Water Ring**.</p>
+                    <p class="nudge-desc">Material waste scanner initialized. Let's start the camera scanner to classify plastics/paper and unlock the **Earth Ring**.</p>
                     <div class="nudge-buttons">
-                        <button class="btn btn-primary btn-sm" onclick="initiateSensorVerification('food')">Submit Food Verification Proof</button>
+                        <button class="btn btn-primary btn-sm" onclick="initiateSensorVerification('waste')">Open Camera Scanner</button>
                     </div>
                 </div>
             `;
         }
-    }
-    else if (lens === 'commute') {
-        if (selection === 'suv') {
-            nudgeHTML = `
-                <div class="nudge-panel">
-                    <div class="nudge-header">⚠️ Carbon Copilot Alert</div>
-                    <p class="nudge-desc">Driving generates **15.6 kg CO2e**. Running a single-occupant gasoline SUV releases heavy tailpipe smog into the air.</p>
-                    <p class="nudge-desc">💡 **Planeteer Swap**: Take Metro Line 2 (**1.1 kg CO2**) or Cycle. Saves **14.5 kg** of CO2!</p>
-                    <div class="nudge-buttons">
-                        <button class="btn btn-primary btn-sm" onclick="acceptDecisionSwap('commute', 'transit')">Accept Metro Swap ✅</button>
-                        <button class="btn btn-secondary btn-sm" onclick="rejectDecisionSwap('commute')">Ignore Nudge ❌</button>
-                    </div>
-                </div>
-            `;
-        }
-        else {
-            const label = selection === 'transit' ? 'Metro Transit' : 'Active Cycling';
-            const value = selection === 'transit' ? '1.1 kg' : '0.0 kg';
+        else if (lens === 'energy') {
+            const energyActions = {
+                standby: { name: "Turn off Standby Appliances", co2: "0.2 kg" },
+                ac: { name: "Set AC to 24-26°C", co2: "1.5 kg" },
+                naturallight: { name: "Use Natural Light", co2: "0.1 kg" },
+                unplug: { name: "Unplug Charger Adapters", co2: "0.05 kg" },
+                fan: { name: "Use Fan instead of AC for 1 hour", co2: "0.3 kg" }
+            };
+            const action = energyActions[selection] || { name: "Energy saving action", co2: "0.5 kg" };
             nudgeHTML = `
                 <div class="nudge-panel green-glow">
                     <div class="nudge-header">🌿 Gaia Check Completed</div>
-                    <p class="nudge-desc">${label} selected (${value} CO2). Great choice for clean air! Let's submit browser location or motion proof to activate the **Wind Ring**.</p>
+                    <p class="nudge-desc">${action.name} selected (${action.co2} CO2 saved). Outstanding power conservation choice! Let's submit verification to activate the **Fire Ring**.</p>
                     <div class="nudge-buttons">
-                        <button class="btn btn-primary btn-sm" onclick="initiateSensorVerification('commute')">Submit Commute Verification Proof</button>
+                        <button class="btn btn-primary btn-sm" onclick="initiateSensorVerification('energy')">Submit Energy Verification Proof</button>
                     </div>
                 </div>
             `;
         }
-    }
-    else if (lens === 'shopping') {
-        if (selection === 'fastfashion') {
-            nudgeHTML = `
-                <div class="nudge-panel">
-                    <div class="nudge-header">⚠️ Carbon Copilot Alert</div>
-                    <p class="nudge-desc">Fast fashion jeans generate **25.0 kg CO2e** due to resource-heavy manufacturing, dyeing, and shipping.</p>
-                    <p class="nudge-desc">💡 **Planeteer Swap**: Vintage Upcycled thrift jacket (**1.5 kg CO2**). Saves **23.5 kg** of CO2!</p>
-                    <div class="nudge-buttons">
-                        <button class="btn btn-primary btn-sm" onclick="acceptDecisionSwap('shopping', 'secondhand')">Accept Vintage Swap ✅</button>
-                        <button class="btn btn-secondary btn-sm" onclick="rejectDecisionSwap('shopping')">Ignore Nudge ❌</button>
-                    </div>
-                </div>
-            `;
-        }
-        else {
-            nudgeHTML = `
-                <div class="nudge-panel green-glow">
-                    <div class="nudge-header">🌿 Gaia Check Completed</div>
-                    <p class="nudge-desc">Vintage Upcycled Jacket selected (**1.5 kg CO2**). Highly circular, low-waste choice! Let's scan purchase receipt to activate the **Heart Ring**.</p>
-                    <div class="nudge-buttons">
-                        <button class="btn btn-primary btn-sm" onclick="initiateSensorVerification('shopping')">Submit Purchase Verification Proof</button>
-                    </div>
-                </div>
-            `;
-        }
-    }
 
-    nudgeBox.innerHTML = nudgeHTML;
-    nudgeBox.style.display = 'block';
+        nudgeBox.innerHTML = nudgeHTML;
+        nudgeBox.style.display = 'block';
+    });
 }
 
 function acceptDecisionSwap(lens, swapOption) {
@@ -1040,12 +1253,45 @@ function initiateSensorVerification(lens) {
             closeVerifyModal();
         });
     }
+    else if (lens === 'energy') {
+        // Smart meter power draw verification
+        html = `
+            <div class="mock-scanner-screen">
+                <span class="mock-title">SMART PLUG ENERGY MONITOR</span>
+                <div class="gps-coordinates-readout" style="color: var(--color-fire); border-color: rgba(239, 68, 68, 0.4);">
+                    <div class="gps-row"><span style="color: var(--color-fire);">SMART OUTLET DETECTED</span><span class="blink" style="color: var(--color-fire);">LIVE</span></div>
+                    <div class="gps-row"><span>DEVICE TYPE:</span><span>Standby Outlet / AC Controller</span></div>
+                    <div class="gps-row"><span>PREVIOUS LOAD:</span><span>850 W</span></div>
+                    <div class="gps-row"><span>CURRENT LOAD:</span><span id="meter-load">Verifying cut...</span></div>
+                    <div class="gps-row"><span>SAVINGS INDEX:</span><span id="meter-savings">Pending...</span></div>
+                </div>
+                <div class="progress-bar-bg" style="height: 6px;">
+                    <div class="progress-bar-fill" id="energy-progress" style="width: 0%"></div>
+                </div>
+            </div>
+        `;
+        container.innerHTML = html;
+        modal.style.display = 'flex';
+
+        // Animate smart meter load reduction
+        setTimeout(() => {
+            const loadEl = document.getElementById('meter-load');
+            const savingsEl = document.getElementById('meter-savings');
+            if (loadEl) loadEl.innerHTML = "<span style='color: var(--color-earth);'>42 W (Energy cut 95%!)</span>";
+            if (savingsEl) savingsEl.innerHTML = "<span style='color: var(--color-earth);'>+0.8 kg CO2/hr</span>";
+        }, 1500);
+
+        simulateProgressVerification('energy-progress', null, null, null, () => {
+            unlockRing('fire');
+            closeVerifyModal();
+        });
+    }
 
     // Bind verification confirm button click
     document.getElementById('btn-confirm-verify').onclick = () => {
         stopWebcamStream();
         // Fallback immediate unlock
-        const elementToUnlock = lens === 'food' ? 'water' : (lens === 'waste' ? 'earth' : (lens === 'commute' ? 'wind' : 'heart'));
+        const elementToUnlock = lens === 'food' ? 'water' : (lens === 'waste' ? 'earth' : (lens === 'commute' ? 'wind' : (lens === 'energy' ? 'fire' : 'heart')));
         unlockRing(elementToUnlock);
         closeVerifyModal();
     };
@@ -1597,6 +1843,20 @@ function handleChatAction(action, param) {
             addBotMessage("⚡ *THE POWER IS YOURS!* ⚡\n\nCaptain Planet sweeps across the biosphere to restore balance! Go Planet!");
         }
     }, 1000);
+}
+
+function toggleReflectionConsole() {
+    const content = document.getElementById('reflection-console-content');
+    const arrow = document.getElementById('reflection-toggle-arrow');
+    if (!content || !arrow) return;
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        arrow.style.transform = 'rotate(180deg)';
+    } else {
+        content.style.display = 'none';
+        arrow.style.transform = 'rotate(0deg)';
+    }
 }
 
 // ----------------- UI UTILITIES -----------------

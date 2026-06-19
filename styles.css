@@ -501,6 +501,7 @@ body {
 .wind-bg { background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.25); }
 .heart-bg { background: rgba(236, 72, 153, 0.15); border: 1px solid rgba(236, 72, 153, 0.25); }
 .earth-bg { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.25); }
+.fire-bg { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.25); }
 
 .decision-info {
     flex-grow: 1;
@@ -531,6 +532,7 @@ body {
 .wind-badge { color: var(--color-wind); background: rgba(56, 189, 248, 0.1); }
 .heart-badge { color: var(--color-heart); background: rgba(236, 72, 153, 0.1); }
 .earth-badge { color: var(--color-earth); background: rgba(16, 185, 129, 0.1); }
+.fire-badge { color: var(--color-fire); background: rgba(239, 68, 68, 0.1); }
 
 .arrow-indicator {
     font-size: 1.1rem;
@@ -1873,4 +1875,79 @@ select:focus, input[type="number"]:focus, input[type="text"]:focus {
     .arrow-indicator {
         display: none;
     }
+}
+
+/* Agent Timeline styles */
+.agent-timeline-container {
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.85rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.agent-timeline-title {
+    font-family: var(--font-retro);
+    font-size: 0.6rem;
+    color: var(--primary-light);
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.05em;
+}
+
+.agent-timeline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.25rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+}
+
+.agent-step {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+    transition: color 0.3s ease;
+}
+
+.agent-step.active {
+    color: var(--primary);
+    text-shadow: 0 0 8px var(--primary-glow);
+    font-weight: 700;
+}
+
+.agent-step.completed {
+    color: var(--primary-light);
+}
+
+.step-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.agent-step.active .step-dot {
+    background: var(--primary);
+    box-shadow: 0 0 6px var(--primary-glow);
+}
+
+.agent-step.completed .step-dot {
+    background: var(--primary-light);
+}
+
+.agent-arrow {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.agent-step.completed + .agent-arrow {
+    color: var(--primary-light);
 }
