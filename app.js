@@ -9,7 +9,9 @@ let state = {
     triviaState: {
         active: false,
         questionIndex: 0
-    }
+    },
+    worldImage: null, // Base64 string of compressed personal photo
+    worldCelebrated: false // track if 100% color-restored celebration ran
 };
 
 // Web Audio API Synth Engine
@@ -66,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupAudioController();
     setupOffsetSlider();
     setupSelectors();
+    setupWorldImageUpload();
     renderAll();
     
     // Welcome message in chat
@@ -96,6 +99,8 @@ function loadState() {
             state = JSON.parse(saved);
             if (!state.unlockedRings) state.unlockedRings = [];
             if (!state.chatHistory) state.chatHistory = [];
+            if (!state.worldImage) state.worldImage = null;
+            if (state.worldCelebrated === undefined) state.worldCelebrated = false;
         } catch (e) {
             console.error("Failed to load local state", e);
         }
@@ -307,6 +312,165 @@ function setupSelectors() {
     }
 }
 
+// ----------------- COLOR MY WORLD PHOTO LOADER & RESIZER -----------------
+function setupWorldImageUpload() {
+    const fileInput = document.getElementById('world-image-input');
+    const uploadZone = document.getElementById('world-upload-zone');
+    const clearBtn = document.getElementById('btn-clear-image');
+
+    if (fileInput) {
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                processAndSaveImage(file);
+            }
+        });
+    }
+
+    if (uploadZone) {
+        // Drag and Drop
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = 'var(--primary-light)';
+            uploadZone.style.background = 'rgba(255, 255, 255, 0.05)';
+        });
+
+        uploadZone.style.cursor = 'pointer';
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.style.borderColor = 'var(--border-color)';
+            uploadZone.style.background = 'rgba(255, 255, 255, 0.02)';
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = 'var(--border-color)';
+            uploadZone.style.background = 'rgba(255, 255, 255, 0.02)';
+            
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                processAndSaveImage(file);
+            } else {
+                showToast("Please upload a valid image file!");
+            }
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            state.worldImage = null;
+            state.worldCelebrated = false;
+            saveState();
+            renderAll();
+            showToast("World image reset.");
+        });
+    }
+}
+
+// Draw image to hidden canvas to resize/compress to under ~150KB for local storage
+function processAndSaveImage(file) {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+            // Target max width/height of 320px
+            const maxDim = 320;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > maxDim) {
+                    height = Math.round(height * (maxDim / width));
+                    width = maxDim;
+                }
+            } else {
+                if (height > maxDim) {
+                    width = Math.round(width * (maxDim / height));
+                    height = maxDim;
+                }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Compress to JPEG at 0.75 quality
+            try {
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
+                state.worldImage = compressedBase64;
+                state.worldCelebrated = false;
+                saveState();
+                renderAll();
+                showToast("World photo uploaded! Let's bring it to color.");
+                
+                // Add conversational nudge in Gaia Terminal
+                addBotMessage("Beautiful photo, Planeteer! 📸 This is the world you are protecting. Currently, it is grayed out. For every Planeteer Ring you activate (Earth, Fire, Wind, Water, Heart), we will restore 20% of its natural color. Let's make it colorful together!", [
+                    { text: "Understood! Let's go 🌟", action: "tips" }
+                ]);
+            } catch (err) {
+                console.error("Image compression error", err);
+                showToast("Failed to process image.");
+            }
+        };
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function updateColorMyWorldCard() {
+    const uploadZone = document.getElementById('world-upload-zone');
+    const imageFrame = document.getElementById('world-image-frame');
+    const worldImg = document.getElementById('world-img');
+    const progressText = document.getElementById('color-progress-text');
+
+    if (!uploadZone || !imageFrame || !worldImg || !progressText) return;
+
+    if (state.worldImage) {
+        uploadZone.style.display = 'none';
+        imageFrame.style.display = 'flex';
+        worldImg.src = state.worldImage;
+
+        const unlockedCount = state.unlockedRings.length;
+        const colorPercentage = unlockedCount * 20; // 0, 20, 40, 60, 80, 100
+        const grayscalePercentage = 100 - colorPercentage;
+
+        // Apply filter grayscale in CSS
+        worldImg.style.filter = `grayscale(${grayscalePercentage}%)`;
+
+        if (unlockedCount === 5) {
+            progressText.textContent = "🌈 100% RESTORED (YOUR WORLD IS VIBRANT!)";
+            imageFrame.classList.add('fully-restored');
+
+            // Celebration trigger
+            if (!state.worldCelebrated) {
+                state.worldCelebrated = true;
+                saveState();
+                playSummonSFX();
+                
+                // Trigger Gaia Bot congratulatory message
+                setTimeout(() => {
+                    addBotMessage("🎉 AMAZING JOB, PLANETEER! Your world has returned to full, vibrant color! 🌈\n\nYour choices in food swaps, active commutes, recycling, and conservation have direct power. By uniting the 5 rings, you summoned Captain Planet and protected what you love! Keep up the real-world action! 🦸‍♂️🌍", [
+                        { text: "Summon Captain Planet Again ⚡", action: "summon_flourish" },
+                        { text: "Review Console Log 📊", action: "tips" }
+                    ]);
+                }, 1000);
+            }
+        } else {
+            progressText.textContent = `Restored: ${colorPercentage}% (Grayscale ${grayscalePercentage}%)`;
+            imageFrame.classList.remove('fully-restored');
+        }
+    } else {
+        uploadZone.style.display = 'block';
+        imageFrame.style.display = 'none';
+        worldImg.src = '';
+        progressText.textContent = 'Grayscale (0% Restored)';
+        imageFrame.classList.remove('fully-restored');
+    }
+}
+
+
 // ----------------- PLANETEER RING CONTROLLER -----------------
 function unlockRing(element) {
     if (!state.unlockedRings.includes(element)) {
@@ -451,6 +615,9 @@ function renderAll() {
 
     // Render Gaia EcoWorld SVG
     updateGaiaEcoWorldSVG(emissions);
+
+    // Update Color My World photo states
+    updateColorMyWorldCard();
 
     // Render visual doughnut
     renderDoughnutChart(emissions);
@@ -1424,6 +1591,10 @@ function handleChatAction(action, param) {
                 desc += `• **${el.name}** ${el.icon}: ${el.task} (+${el.pts} pts, -${el.co2} kg CO2e)\n`;
             });
             addBotMessage(desc);
+        }
+        else if (action === "summon_flourish") {
+            playSummonSFX();
+            addBotMessage("⚡ *THE POWER IS YOURS!* ⚡\n\nCaptain Planet sweeps across the biosphere to restore balance! Go Planet!");
         }
     }, 1000);
 }

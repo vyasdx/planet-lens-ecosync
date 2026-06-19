@@ -150,6 +150,37 @@
                             </div>
                         </div>
 
+                        <!-- Card 1.5: Color My World (Personal Sanctuary) -->
+                        <div class="card glass personal-world-card flex-column-center">
+                            <div class="card-header" style="width: 100%;">
+                                <div>
+                                    <h2>Color My World</h2>
+                                    <span class="input-subtext">The personal world you are protecting</span>
+                                </div>
+                            </div>
+                            
+                            <div class="personal-world-container" style="width: 100%; margin-top: 12px; position: relative;">
+                                <!-- Photo Upload Zone -->
+                                <div id="world-upload-zone" class="world-upload-zone">
+                                    <input type="file" id="world-image-input" accept="image/*" style="display: none;">
+                                    <div class="upload-prompt" onclick="document.getElementById('world-image-input').click()">
+                                        <span class="upload-icon">📸</span>
+                                        <p class="upload-text">What world are you protecting?</p>
+                                        <span class="upload-subtext">Click to upload a photo of a plant, pet, place, memory, or person you care about.</span>
+                                    </div>
+                                </div>
+
+                                <!-- Rendered Image Frame -->
+                                <div id="world-image-frame" class="world-image-frame" style="display: none;">
+                                    <img id="world-img" src="" alt="The world I protect">
+                                    <div class="color-progress-overlay">
+                                        <span id="color-progress-text">Grayscale (0% Restored)</span>
+                                    </div>
+                                    <button type="button" class="btn-clear-image" id="btn-clear-image" title="Reset Image">✕</button>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Card 2: Planeteer Rings Showcase -->
                         <div class="card glass flex-column-center">
                             <h3>Planeteer Elements Activated</h3>
