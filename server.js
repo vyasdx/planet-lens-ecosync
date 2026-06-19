@@ -15,25 +15,24 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
-    // Normalize URL and serve index.html by default
-    let filePath = req.url === '/' ? '/index.html' : req.url;
-    
     // Remove query parameters if present (e.g. stylesheet.css?v=1.2)
-    filePath = filePath.split('?')[0];
-    
-    filePath = path.join(__dirname, filePath);
+    const urlPath = req.url.split('?')[0];
+
+    // Normalize URL and serve index.html by default
+    const filePath = urlPath === '/' ? '/index.html' : urlPath;
+    const absolutePath = path.join(__dirname, filePath);
 
     // Prevent directory traversal attacks
-    if (!filePath.startsWith(__dirname)) {
+    if (!absolutePath.startsWith(__dirname)) {
         res.statusCode = 403;
         res.end('Forbidden');
         return;
     }
 
-    const ext = path.extname(filePath);
+    const ext = path.extname(absolutePath);
     const contentType = MIME_TYPES[ext] || 'text/plain';
 
-    fs.readFile(filePath, (err, content) => {
+    fs.readFile(absolutePath, (err, content) => {
         if (err) {
             if (err.code === 'ENOENT') {
                 res.statusCode = 404;
