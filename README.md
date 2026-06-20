@@ -83,6 +83,21 @@ npm start
 # serves on http://localhost:8080
 ```
 
+## ✅ Testing
+
+Core carbon logic lives in `core.js` — a pure, DOM-free, dependency-free module that the
+browser app and the test suite both consume. Tests use Node's built-in runner (no frameworks):
+
+```bash
+npm test
+```
+
+`tests/core.test.js` covers regional baselines, the personal footprint calculator
+(`computeFootprint`), projected emissions with ring reductions and offsets, planet-health
+math, rank thresholds, the ISO week key, and `escapeHTML` (XSS-safety) — 13 passing tests.
+Separating pure logic into `core.js` keeps the carbon engine independently testable and the
+UI layer thin.
+
 ## 🚀 Deploy (Google Cloud Run)
 
 ```bash

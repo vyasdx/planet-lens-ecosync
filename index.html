@@ -103,7 +103,7 @@
                 </div>
             </div>
 
-            <nav class="app-nav">
+            <nav class="app-nav" aria-label="Primary navigation">
                 <button class="nav-btn active" data-tab="lens">
                     <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                     <span>Dashboard</span>
@@ -645,7 +645,7 @@
 
             <!-- Mobile bottom navigation (Android-app pattern). Shares .nav-btn +
                  data-tab with the sidebar so switchTab keeps both in sync. -->
-            <nav class="bottom-nav">
+            <nav class="bottom-nav" aria-label="Mobile navigation">
                 <button class="nav-btn bnav-btn active" data-tab="lens">
                     <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                     <span>Home</span>
@@ -716,6 +716,7 @@
         <span class="toast-msg" id="toast-message">Challenge logged! +10 Points</span>
     </div>
 
+    <script src="core.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

@@ -803,3 +803,37 @@ a { color: inherit; text-decoration: none; }
     .bnav-btn span { font-size: 0.56rem; }
     .topbar-brand-mobile b { display: none; }   /* logo only on very narrow screens */
 }
+
+/* =====================================================================
+   ACCESSIBILITY
+   ===================================================================== */
+/* Visible keyboard-focus indicator on all interactive controls */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+.nav-btn:focus-visible,
+.lens-tile:focus-visible,
+.chip:focus-visible,
+.ring-slot:focus-visible {
+    outline: 2px solid var(--primary-light);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* Screen-reader-only helper */
+.sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+/* Respect users who prefer reduced motion — disable non-essential animation */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+    #threejs-earth-container, #threejs-earth-container canvas { transition: none !important; }
+}

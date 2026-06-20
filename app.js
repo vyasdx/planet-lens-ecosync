@@ -3238,6 +3238,23 @@ void main() {
         ).join('');
     }
 
+    // ---- Accessibility: reflect the active tab to assistive tech ----
+    function syncAriaCurrent() {
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            if (btn.classList.contains('active')) btn.setAttribute('aria-current', 'page');
+            else btn.removeAttribute('aria-current');
+        });
+    }
+    if (typeof switchTab === 'function') {
+        const _origSwitchTab = switchTab;
+        // eslint-disable-next-line no-global-assign
+        switchTab = function () {
+            const r = _origSwitchTab.apply(this, arguments);
+            try { syncAriaCurrent(); } catch (e) { /* non-fatal */ }
+            return r;
+        };
+    }
+
     // ---- Hook renderAll so the new pieces stay in sync with state ----
     if (typeof renderAll === 'function') {
         const _origRenderAll = renderAll;
@@ -3400,8 +3417,12 @@ void main() {
         try { return Object.assign({}, LIFE_DEFAULTS, JSON.parse(localStorage.getItem(LIFE_KEY) || '{}')); }
         catch (e) { return Object.assign({}, LIFE_DEFAULTS); }
     }
-    // Annual tonnes CO₂e from lifestyle inputs (rough but defensible factors).
+    // Annual tonnes CO₂e from lifestyle inputs. Delegates to the unit-tested
+    // PlanetLensCore module; the inline version below is a safe fallback.
     function computeFootprint(v) {
+        if (typeof PlanetLensCore !== 'undefined' && PlanetLensCore.computeFootprint) {
+            return PlanetLensCore.computeFootprint(v);
+        }
         const fuelF = { petrol: 0.192, diesel: 0.171, hybrid: 0.11, ev: 0.05, none: 0 }; // kg/km
         const vehM = { sedan: 1.0, suv: 1.4, hatchback: 0.85, ev: 1.0, none: 0 };
         const car = v.vehicle === 'none' ? 0 : (v.carKm * 52 * (fuelF[v.fuel] || 0.19) * (vehM[v.vehicle] || 1)) / 1000;
@@ -3493,6 +3514,7 @@ void main() {
         installEarthFlight();
         wireVoiceToggle();
         fetchGlobalCO2();
+        syncAriaCurrent();
         // restore a previously-saved lifestyle so the footprint is personal on load
         try { if (localStorage.getItem(LIFE_KEY)) applyLifestyle(loadLifestyle(), false); } catch (e) {}
         const lsBtn = document.getElementById('btn-open-lifestyle');

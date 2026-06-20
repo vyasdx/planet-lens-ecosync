@@ -1,10 +1,11 @@
 {
-  "name": "ecosync",
+  "name": "planet-lens",
   "version": "1.0.0",
-  "description": "EcoSync - Carbon Footprint Tracker & Smart Assistant",
+  "description": "Planet Lens — Eco-Intelligence carbon-footprint copilot",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test"
   },
   "dependencies": {}
 }
