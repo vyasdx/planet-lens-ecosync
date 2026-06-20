@@ -1,0 +1,12 @@
+node_modules/
+.git/
+.gitignore
+.claude/
+.gemini/
+.idea/
+.vscode/
+_pre_revamp_backup/
+stitch_extracted/
+stitch_ecosync_futuristic_ui_revamp.zip
+*.log
+.DS_Store

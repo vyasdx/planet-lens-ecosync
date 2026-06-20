@@ -3,540 +3,648 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="EcoSync Lens: Planeteer Edition. A carbon-aware AI decision copilot with browser sensors and a reactive Gaia EcoWorld.">
-    <title>EcoSync Lens - Planeteer Carbon Copilot</title>
-    <!-- Google Fonts -->
+    <meta name="description" content="Planet Lens — Eco-Intelligence command center. A carbon-aware AI decision copilot with browser sensors and a rotating Mother Earth visualization.">
+    <title>Planet Lens · Eco-Intelligence Command Center</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-    <div class="app-background"></div>
-    
-    <div class="app-container">
-        <!-- Sidebar / Header -->
-        <header class="app-header">
-            <div class="logo">
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="logo-icon">
-                    <path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12A10 10 0 0 1 12 2z"/>
-                    <path d="M12 6a6 6 0 0 1 6 6c0 3.314-2.686 6-6 6S6 15.314 6 12a6 6 0 0 1 6-6z"/>
-                    <path d="M12 10a2 2 0 1 1 0 4 2 2 0 0 1 0-4z" class="logo-dot"/>
-                </svg>
-                <span class="logo-text">EcoSync Lens</span>
-            </div>
-            
-            <nav class="app-nav">
-                <button class="nav-btn active" data-tab="lens">
-                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                    <span>Decision Lens</span>
-                </button>
-                <button class="nav-btn" data-tab="console">
-                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                    <span>Console Log</span>
-                </button>
-                <button class="nav-btn" data-tab="assistant">
-                    <div class="assistant-nav-indicator"></div>
-                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                    <span>Gaia Terminal</span>
-                </button>
-            </nav>
 
-            <!-- Audio Controller -->
-            <div class="audio-control-card">
-                <span class="audio-label">Retro Synth 8-Bit BGM</span>
-                <button class="btn btn-secondary btn-sm" id="btn-toggle-music">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" class="margin-right-sm icon-play"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" class="margin-right-sm icon-pause" style="display: none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-                    <span id="music-btn-text">Play BGM</span>
+    <!-- ============================ WELCOME GATE ============================ -->
+    <div class="welcome-backdrop" id="welcome-backdrop"></div>
+    <div id="welcome-splash" class="welcome-splash-overlay">
+        <div class="welcome-grid-overlay"></div>
+        <div class="welcome-accents">
+            <div class="welcome-accent-line line-1"></div>
+            <div class="welcome-accent-line line-2"></div>
+            <div class="welcome-accent-line line-3"></div>
+        </div>
+
+        <div class="welcome-splash-content">
+            <div class="welcome-header-brand">
+                <span class="welcome-logo-text">Planet Lens</span>
+                <span class="welcome-version-badge">ECO-INTELLIGENCE V4.2</span>
+            </div>
+
+            <!-- 3D earth floats here, then flies into the dashboard -->
+            <div class="welcome-earth-container" id="welcome-earth-container">
+                <div class="welcome-earth-aura"></div>
+                <div class="welcome-earth-placeholder"></div>
+            </div>
+
+            <h1 class="welcome-title">Welcome, <span class="welcome-highlight">Planet Protectors</span></h1>
+            <p class="welcome-subtitle">Restore your world. Every decision brings us closer to a greener future.</p>
+
+            <div class="welcome-btn-wrapper">
+                <button class="btn btn-primary welcome-btn" id="btn-enter-dashboard">
+                    <span>ENTER COMMAND CENTER</span>
                 </button>
             </div>
 
-            <div class="user-summary">
-                <div class="points-display">
-                    <span class="points-label">EcoPoints</span>
-                    <span class="points-value" id="header-points">0</span>
+            <div class="welcome-hud-container">
+                <div class="welcome-vitals">
+                    <div class="vital-row">
+                        <span class="vital-label">Global CO2 <span id="welcome-co2-live" style="display:none; color:var(--primary-light); font-size:0.62rem; letter-spacing:0.08em;">● LIVE</span></span>
+                        <span class="vital-value text-red" id="welcome-co2">419 PPM</span>
+                    </div>
+                    <div class="vital-bar"><div class="vital-bar-fill fill-red" id="welcome-co2-bar" style="width: 80%;"></div></div>
+                    <div class="vital-row">
+                        <span class="vital-label">Forestry Index</span>
+                        <span class="vital-value text-green">62%</span>
+                    </div>
+                    <div class="vital-bar"><div class="vital-bar-fill fill-green" style="width: 62%;"></div></div>
                 </div>
-                <div class="user-badge-mini" id="header-badge">Eco Seed</div>
-            </div>
-        </header>
-
-        <!-- Main Content -->
-        <main class="app-main">
-            <!-- TAB 1: COPILOT LENS -->
-            <section class="tab-content active" id="tab-lens">
-                <div class="lens-layout">
-                    <!-- Left: Gaia's EcoWorld & Rings -->
-                    <div class="lens-left-column">
-                        <!-- Card 1: Gaia EcoWorld SVG -->
-                        <div class="card card-hero glass">
-                            <div class="card-header">
-                                <div>
-                                    <h2>Gaia's Living EcoWorld</h2>
-                                    <span class="input-subtext">Reacts dynamically to your choices</span>
-                                </div>
-                                <span class="badge" id="gaia-health-badge">Health: 20%</span>
-                            </div>
-                            
-                            <!-- Interactive SVG Landscape -->
-                            <div class="ecoworld-svg-container">
-                                <svg id="gaia-svg" viewBox="0 0 400 220" width="100%" height="100%">
-                                    <defs>
-                                        <!-- Sky Gradient -->
-                                        <linearGradient id="sky-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-                                            <stop offset="0%" class="sky-color-top" stop-color="#0f172a" />
-                                            <stop offset="100%" class="sky-color-bottom" stop-color="#1e293b" />
-                                        </linearGradient>
-                                        <filter id="glow-filter">
-                                            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                                            <feMerge>
-                                                <feMergeNode in="coloredBlur"/>
-                                                <feMergeNode in="SourceGraphic"/>
-                                            </feMerge>
-                                        </filter>
-                                    </defs>
-
-                                    <!-- Sky Backing -->
-                                    <rect width="400" height="220" fill="url(#sky-grad)" />
-
-                                    <!-- Smog Overlay Filter -->
-                                    <rect id="svg-smog" width="400" height="220" fill="#475569" opacity="0.6" style="transition: opacity 1.5s ease; pointer-events: none;" />
-
-                                    <!-- Sun / Moon -->
-                                    <circle id="svg-sun" cx="320" cy="50" r="18" fill="#fef08a" opacity="0.8" />
-
-                                    <!-- Clouds -->
-                                    <g id="svg-clouds" fill="#cbd5e1" opacity="0.4" style="transition: transform 1s ease;">
-                                        <path d="M 30,70 A 10,10 0 0,1 45,62 A 15,15 0 0,1 70,65 A 10,10 0 0,1 80,75 L 25,75 Z" class="cloud-1" />
-                                        <path d="M 210,50 A 8,8 0 0,1 222,44 A 12,12 0 0,1 242,46 A 8,8 0 0,1 250,54 L 205,54 Z" class="cloud-2" />
-                                    </g>
-
-                                    <!-- Mountains -->
-                                    <polygon points="0,170 80,100 160,170" fill="#1e293b" />
-                                    <polygon points="100,170 190,90 280,170" fill="#0f172a" />
-
-                                    <!-- Clean Blue / Murky River -->
-                                    <path id="svg-river" d="M 0,220 C 120,200 150,180 200,165 C 230,155 300,160 400,150 L 400,220 L 0,220 Z" fill="#334155" style="transition: fill 1.5s ease;" />
-
-                                    <!-- Hills / Ground -->
-                                    <path d="M 0,220 Q 150,150 400,180 L 400,220 L 0,220 Z" fill="#1b253b" />
-
-                                    <!-- Gaia Tree Trunk -->
-                                    <path d="M 270,180 Q 275,140 275,120 L 285,120 Q 285,140 290,180 Z" fill="#451a03" />
-
-                                    <!-- Gaia Tree Branches / Leaves (Grown via opacity / class transitions) -->
-                                    <g id="svg-foliage" style="transition: opacity 1.5s ease;" opacity="0.1">
-                                        <circle cx="280" cy="110" r="22" fill="#047857" opacity="0.85" />
-                                        <circle cx="265" cy="100" r="16" fill="#059669" opacity="0.9" />
-                                        <circle cx="295" cy="100" r="16" fill="#10b981" opacity="0.9" />
-                                        <!-- Blooming Flowers (unlocked at high health) -->
-                                        <g id="svg-flowers" opacity="0">
-                                            <circle cx="270" cy="105" r="3" fill="#f43f5e" />
-                                            <circle cx="290" cy="95" r="3" fill="#f43f5e" />
-                                            <circle cx="282" cy="115" r="3" fill="#f59e0b" />
-                                        </g>
-                                    </g>
-
-                                    <!-- Summoned Captain Planet Glow Ring Shield (Visible at Net Zero) -->
-                                    <circle id="svg-captain-glow" cx="280" cy="120" r="65" stroke="var(--primary)" stroke-width="2" stroke-dasharray="8 4" fill="transparent" opacity="0" filter="url(#glow-filter)" style="transition: opacity 2s ease;" />
-                                    <!-- Captain Planet Retro Silhouette Symbol -->
-                                    <g id="svg-captain-planet" opacity="0" transform="translate(130, 20) scale(0.65)" style="transition: opacity 2s ease;">
-                                        <circle cx="120" cy="80" r="28" fill="rgba(16, 185, 129, 0.15)" stroke="var(--primary)" stroke-width="1.5" />
-                                        <!-- Chest logo emblem representation -->
-                                        <path d="M 120,62 L 128,74 L 112,74 Z" fill="#34d399" />
-                                        <circle cx="120" cy="82" r="5" fill="#fef08a" />
-                                    </g>
-                                </svg>
-                            </div>
-                        </div>
-
-                        <!-- Card 1.5: Color My World (Personal Sanctuary) -->
-                        <div class="card glass personal-world-card flex-column-center">
-                            <div class="card-header" style="width: 100%;">
-                                <div>
-                                    <h2>What world are you protecting?</h2>
-                                    <span class="input-subtext">Upload a photo of a plant, pet, place, person, or memory. Every eco-action brings your world back to color.</span>
-                                </div>
-                            </div>
-                            
-                            <div class="personal-world-container" style="width: 100%; margin-top: 12px; position: relative;">
-                                <!-- Photo Upload Zone -->
-                                <div id="world-upload-zone" class="world-upload-zone">
-                                    <input type="file" id="world-image-input" accept="image/*" style="display: none;">
-                                    <div class="upload-prompt" onclick="document.getElementById('world-image-input').click()">
-                                        <span class="upload-icon">📸</span>
-                                        <p class="upload-text">Click to upload your image</p>
-                                        <span class="upload-subtext">Your photo stays locally in your browser and is not uploaded to any server.</span>
-                                    </div>
-                                </div>
-
-                                <!-- Rendered Image Frame -->
-                                <div id="world-image-frame" class="world-image-frame" style="display: none;">
-                                    <img id="world-img" src="" alt="The world I protect">
-                                    <canvas id="world-celebration-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;"></canvas>
-                                    <div class="color-progress-overlay">
-                                        <span id="color-progress-text">Grayscale (0% Restored)</span>
-                                    </div>
-                                    <button type="button" class="btn-clear-image" id="btn-clear-image" title="Reset Image">✕</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Card 2: Planeteer Rings Showcase -->
-                        <div class="card glass flex-column-center">
-                            <h3>Planeteer Elements Activated</h3>
-                            <p class="section-desc text-center">Unleash all five elements to summon Captain Planet and stabilize Gaia!</p>
-                            
-                            <div class="rings-grid">
-                                <!-- Ring 1: Earth -->
-                                <div class="ring-slot" id="ring-earth" data-element="earth">
-                                    <div class="ring-icon">🪨</div>
-                                    <span class="ring-name">Earth</span>
-                                    <span class="ring-glow-indicator"></span>
-                                </div>
-                                <!-- Ring 2: Fire -->
-                                <div class="ring-slot" id="ring-fire" data-element="fire">
-                                    <div class="ring-icon">🔥</div>
-                                    <span class="ring-name">Fire</span>
-                                    <span class="ring-glow-indicator"></span>
-                                </div>
-                                <!-- Ring 3: Wind -->
-                                <div class="ring-slot" id="ring-wind" data-element="wind">
-                                    <div class="ring-icon">💨</div>
-                                    <span class="ring-name">Wind</span>
-                                    <span class="ring-glow-indicator"></span>
-                                </div>
-                                <!-- Ring 4: Water -->
-                                <div class="ring-slot" id="ring-water" data-element="water">
-                                    <div class="ring-icon">💧</div>
-                                    <span class="ring-name">Water</span>
-                                    <span class="ring-glow-indicator"></span>
-                                </div>
-                                <!-- Ring 5: Heart -->
-                                <div class="ring-slot" id="ring-heart" data-element="heart">
-                                    <div class="ring-icon">❤️</div>
-                                    <span class="ring-name">Heart</span>
-                                    <span class="ring-glow-indicator"></span>
-                                </div>
-                            </div>
-                            
-                            <div class="summon-status-text" id="summon-alert">
-                                Planeteers: Earth, Fire, Wind, Water, Heart! Waiting for combined powers...
-                            </div>
-                        </div>
+                <div class="welcome-terminal">
+                    <div class="terminal-status">
+                        <span class="terminal-status-dot animate-pulse"></span>
+                        <span>CONNECTION ESTABLISHED</span>
                     </div>
-
-                    <!-- Right: Proactive Decision Lenses -->
-                    <div class="lens-right-column">
-                        <div class="section-title-bar">
-                            <h3>AI Decision Lenses</h3>
-                            <span class="badge badge-glow">Active Copilot</span>
-                        </div>
-                        <p class="section-desc">EcoSync detects your daily decisions in real-time. Choose a lens below to test or verify a low-carbon choice before you act:</p>
-
-                        <div class="demo-cta-container" style="margin-bottom: 1.5rem; text-align: left;">
-                            <button class="btn btn-primary" id="btn-food-demo-cta" onclick="openDecisionModal('food')" style="font-family: var(--font-retro); font-size: 0.8rem; background: linear-gradient(135deg, var(--color-water) 0%, var(--primary) 100%); border: none; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.85rem; cursor: pointer;">
-                                🚀 QUICK DEMO: Try Food Lens Demo
-                            </button>
-                        </div>
-                        
-                        <div class="decision-lenses-grid">
-                            <!-- Card 1: Food Order -->
-                            <div class="decision-card glass hover-lift" onclick="openDecisionModal('food')">
-                                <div class="decision-icon-wrapper water-bg">🍔</div>
-                                <div class="decision-info">
-                                    <h4>Food Order Lens</h4>
-                                    <p>Scan lunch carts or menu items to check swap alerts.</p>
-                                    <span class="badge-element-tag water-badge">Water / Earth</span>
-                                </div>
-                                <div class="arrow-indicator">➔</div>
-                            </div>
-
-                            <!-- Card 2: Commute Router -->
-                            <div class="decision-card glass hover-lift" onclick="openDecisionModal('commute')">
-                                <div class="decision-icon-wrapper wind-bg">🚗</div>
-                                <div class="decision-info">
-                                    <h4>Commute Route Lens</h4>
-                                    <p>Find clean navigation swaps before driving.</p>
-                                    <span class="badge-element-tag wind-badge">Wind / Fire</span>
-                                </div>
-                                <div class="arrow-indicator">➔</div>
-                            </div>
-
-                            <!-- Card 3: Shopping Scanner -->
-                            <div class="decision-card glass hover-lift" onclick="openDecisionModal('shopping')">
-                                <div class="decision-icon-wrapper heart-bg">🛍️</div>
-                                <div class="decision-info">
-                                    <h4>Shopping Scanner</h4>
-                                    <p>Evaluate apparel or product carbon lifecycles.</p>
-                                    <span class="badge-element-tag heart-badge">Heart Element</span>
-                                </div>
-                                <div class="arrow-indicator">➔</div>
-                            </div>
-
-                            <!-- Card 4: Waste Classifier -->
-                            <div class="decision-card glass hover-lift" onclick="openDecisionModal('waste')">
-                                <div class="decision-icon-wrapper earth-bg">♻️</div>
-                                <div class="decision-info">
-                                    <h4>Waste Classifier</h4>
-                                    <p>Initiate camera scanner to sort recyclables.</p>
-                                    <span class="badge-element-tag earth-badge">Earth Element</span>
-                                </div>
-                                <div class="arrow-indicator">➔</div>
-                            </div>
-
-                            <!-- Card 5: Energy Saver Lens -->
-                            <div class="decision-card glass hover-lift" onclick="openDecisionModal('energy')">
-                                <div class="decision-icon-wrapper fire-bg">⚡</div>
-                                <div class="decision-info">
-                                    <h4>Energy Saver Lens</h4>
-                                    <p>Check standby loads or clean cooling/lighting power swaps.</p>
-                                    <span class="badge-element-tag fire-badge">Fire Element</span>
-                                </div>
-                                <div class="arrow-indicator">➔</div>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="terminal-log" id="status-terminal">CALCULATING ECO-IMPACT...</div>
+                    <div class="terminal-log opacity-40">WAITING FOR COMMANDER AUTHENTICATION</div>
                 </div>
-            </section>
-
-            <!-- TAB 2: CONSOLE LOG (REFLECTION & ANALYTICS) -->
-            <section class="tab-content" id="tab-console">
-                <!-- Collapsible Reflection Console Trigger -->
-                <div class="card glass reflection-header-card" style="cursor: pointer; margin-bottom: 1.5rem; width: 100%;" onclick="toggleReflectionConsole()">
-                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                        <div>
-                            <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.35rem;">🔮 Reflection Console</h2>
-                            <span class="input-subtext">Click to inspect carbon statistics, regional calculators, and historical logs</span>
-                        </div>
-                        <span id="reflection-toggle-arrow" style="font-size: 1.25rem; transition: transform 0.3s ease;">▼</span>
-                    </div>
-                </div>
-
-                <!-- Collapsible Console Content (hidden by default) -->
-                <div id="reflection-console-content" style="display: none; width: 100%;">
-                    <div class="dashboard-grid">
-                    
-                    <!-- Left: Carbon Footprint Summary -->
-                    <div class="card card-hero glass">
-                        <div class="card-header">
-                            <h2>Your Carbon Footprint Console</h2>
-                            <div class="region-selector-container">
-                                <label for="region-select">Region:</label>
-                                <select id="region-select">
-                                    <option value="us">United States (High)</option>
-                                    <option value="eu">Europe (Medium)</option>
-                                    <option value="in">India (Low)</option>
-                                    <option value="global" selected>Global Average</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="carbon-hero-content">
-                            <div class="main-metric">
-                                <span class="metric-number" id="dashboard-total-co2">0.0</span>
-                                <div class="metric-unit">
-                                    <span class="unit-main">tons CO2e</span>
-                                    <span class="unit-sub">per year</span>
-                                </div>
-                            </div>
-                            
-                            <div class="comparison-bar-container">
-                                <div class="comparison-info">
-                                    <span>Comparison to Region Average</span>
-                                    <span class="comparison-percent" id="comparison-text">Evaluating...</span>
-                                </div>
-                                <div class="progress-bar-bg">
-                                    <div class="progress-bar-fill" id="comparison-fill" style="width: 0%"></div>
-                                    <div class="progress-bar-marker" id="target-marker" style="left: 60%">
-                                        <span class="marker-label">Target (60%)</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="dashboard-stats-grid">
-                            <div class="stat-box">
-                                <span class="stat-label">Active Elements</span>
-                                <span class="stat-value" id="dashboard-active-challenges">0</span>
-                            </div>
-                            <div class="stat-box">
-                                <span class="stat-label">EcoPoints</span>
-                                <span class="stat-value" id="dashboard-points">0</span>
-                            </div>
-                            <div class="stat-box">
-                                <span class="stat-label">Offset Reduction</span>
-                                <span class="stat-value" id="dashboard-reduction">0 kg</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right: Visual Breakdown Chart -->
-                    <div class="card glass">
-                        <div class="card-header">
-                            <h3>Emissions Breakdown</h3>
-                        </div>
-                        <div class="chart-container">
-                            <div class="chart-wrapper">
-                                <svg class="doughnut-chart" id="svg-doughnut" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="var(--bg-card)" stroke-width="12"></circle>
-                                    <!-- Dynamic segments will be inserted here by JS -->
-                                </svg>
-                                <div class="chart-overlay">
-                                    <span class="overlay-value" id="chart-overlay-value">0%</span>
-                                    <span class="overlay-label">Tracked</span>
-                                </div>
-                            </div>
-                            <div class="chart-legend" id="chart-legend">
-                                <!-- Legend items dynamically generated -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Left Row 2: Historical Trend -->
-                    <div class="card glass">
-                        <div class="card-header">
-                            <h3>Historical Trend</h3>
-                            <span class="input-subtext">Last 4 Weeks (tons CO2e)</span>
-                        </div>
-                        <div class="trend-chart-wrapper">
-                            <div class="trend-bar-chart" id="trend-bar-chart">
-                                <!-- Injected dynamically by app.js -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right Row 2: Offset Progress -->
-                    <div class="card glass">
-                        <div class="card-header">
-                            <h3>Net-Zero Offset</h3>
-                            <span class="badge" id="offset-points-badge">+0 Points</span>
-                        </div>
-                        <div class="offset-content">
-                            <div class="offset-stat">
-                                <span class="offset-number" id="offset-trees">0</span>
-                                <span class="offset-label">Mature trees required to offset your annual footprint</span>
-                            </div>
-                            <div class="divider"></div>
-                            <div class="offset-simulator">
-                                <label for="offset-simulate-slider">Simulate Carbon Offsetting:</label>
-                                <div class="range-slider-wrapper">
-                                    <input type="range" id="offset-simulate-slider" min="0" max="100" value="0" class="input-slider">
-                                    <div class="slider-values">
-                                        <span class="value-display" id="offset-simulate-val">0% offsetted</span>
-                                    </div>
-                                </div>
-                                <span class="input-subtext">Simulates planting trees or funding clean energy offsets.</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bottom Left: Smart Personalized Insights -->
-                    <div class="card card-full glass grid-col-2">
-                        <div class="card-header">
-                            <h3 class="flex-center">
-                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--primary)" stroke-width="2" class="margin-right-sm"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 14 18.469V19a2 2 0 0 1-2 2h0a2 2 0 0 1-2-2v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-                                EcoBot's Smart Insights
-                            </h3>
-                            <button class="btn btn-secondary btn-sm" id="btn-refresh-insights">Recalculate</button>
-                        </div>
-                        <div class="insights-container" id="insights-panel">
-                            <!-- Dynamically loaded insights -->
-                        </div>
-                    </div>
-                </div>
-                </div> <!-- End of reflection-console-content -->
-
-                <!-- Hidden inputs to preserve carbon calculations backward compatibility -->
-                <div style="display: none;">
-                    <input type="checkbox" id="owns-vehicle" checked>
-                    <select id="vehicle-type"><option value="sedan">sedan</option></select>
-                    <select id="fuel-type"><option value="petrol">petrol</option></select>
-                    <input type="range" id="car-distance" value="100">
-                    <input type="range" id="public-transit" value="2">
-                    <input type="number" id="flights" value="1">
-                    <input type="number" id="electricity" value="80">
-                    <input type="number" id="gas" value="40">
-                    <input type="range" id="clean-energy" value="0">
-                    <input type="number" id="house-members" value="2">
-                    <select id="diet-type"><option value="medium-meat">medium-meat</option></select>
-                    <input type="range" id="food-waste" value="20">
-                    <input type="number" id="clothing-purchases" value="2">
-                    <input type="number" id="electronics-purchases" value="1">
-                    <input type="checkbox" id="recycle-paper" checked>
-                    <input type="checkbox" id="recycle-plastic" checked>
-                    <input type="checkbox" id="recycle-glass" checked>
-                    <input type="checkbox" id="recycle-metal" checked>
-                </div>
-            </section>
-
-            <!-- TAB 3: GAIA TERMINAL (CHAT & TRIVIA) -->
-            <section class="tab-content" id="tab-assistant">
-                <div class="assistant-layout card glass">
-                    <div class="assistant-header">
-                        <div class="assistant-avatar">
-                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--primary)" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M12 2v3M8 5h8M8 11V9a4 4 0 0 1 8 0v2"/></svg>
-                        </div>
-                        <div class="assistant-info">
-                            <h4>Gaia Bot Terminal</h4>
-                            <span class="assistant-status">Active • Telepathic Link Online</span>
-                        </div>
-                        <button class="btn btn-secondary btn-sm" id="btn-clear-chat">Clear History</button>
-                    </div>
-
-                    <!-- Chat Log -->
-                    <div class="chat-container-scroll" id="chat-messages">
-                        <!-- Messages inserted by JS -->
-                    </div>
-
-                    <!-- Typing Indicator -->
-                    <div class="chat-typing" id="chat-typing-indicator" style="display: none;">
-                        <span class="dot"></span>
-                        <span class="dot"></span>
-                        <span class="dot"></span>
-                    </div>
-
-                    <!-- Suggested Prompts Chips -->
-                    <div class="chat-suggestion-chips" id="suggestion-chips">
-                        <button class="chip" onclick="sendSuggestion('Play Planeteer Trivia Game 🧠')">Play Planeteer Trivia Game 🧠</button>
-                        <button class="chip" onclick="sendSuggestion('Run Gaia footprint diagnosis 📊')">Run footprint diagnosis 📊</button>
-                        <button class="chip" onclick="sendSuggestion('How to summon Captain Planet? 🦸‍♂️')">How to summon Captain Planet? 🦸‍♂️</button>
-                        <button class="chip" onclick="sendSuggestion('Give me quick eco tips 💡')">Give me quick eco tips 💡</button>
-                    </div>
-
-                    <!-- Input Bar -->
-                    <form class="chat-input-bar" id="chat-form">
-                        <input type="text" id="chat-input" placeholder="Commune with Gaia Bot..." autocomplete="off">
-                        <button type="submit" class="btn btn-primary" id="btn-send-message">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                        </button>
-                    </form>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <!-- DECISION MODAL: ACTIVE NUDGES -->
-    <div id="decision-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-card glass">
-            <button class="btn-close-modal" onclick="closeDecisionModal()">&times;</button>
-            <div id="modal-lens-content">
-                <!-- Injected dynamically based on lens selected -->
             </div>
         </div>
     </div>
 
-    <!-- ACTION VERIFICATION MODAL -->
-    <div id="verify-modal" class="modal-overlay style-verify-overlay" style="display: none;">
+    <!-- Floating 3D Earth (animates from welcome into the dashboard slot) -->
+    <div id="threejs-earth-container"></div>
+
+    <!-- Ambient background -->
+    <div class="app-background">
+        <canvas id="shader-canvas-ambient" style="display:block; width:100%; height:100%; pointer-events:none; opacity:0.55;"></canvas>
+    </div>
+
+    <!-- ============================ APP SHELL ============================ -->
+    <div class="app-container">
+
+        <!-- ---------------------------- SIDEBAR ---------------------------- -->
+        <aside class="app-sidebar">
+            <div class="sidebar-brand">
+                <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="logo-icon">
+                    <path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12A10 10 0 0 1 12 2z"/>
+                    <path d="M12 6a6 6 0 0 1 6 6c0 3.314-2.686 6-6 6S6 15.314 6 12a6 6 0 0 1 6-6z"/>
+                    <path d="M12 10a2 2 0 1 1 0 4 2 2 0 0 1 0-4z" class="logo-dot"/>
+                </svg>
+                <div class="sidebar-brand-text">
+                    <span class="logo-text">Planet Lens</span>
+                    <span class="logo-sub">Eco-Intelligence</span>
+                </div>
+            </div>
+
+            <nav class="app-nav">
+                <button class="nav-btn active" data-tab="lens">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-btn" data-tab="library">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    <span>Action Library</span>
+                </button>
+                <button class="nav-btn" data-tab="community">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    <span>Community</span>
+                </button>
+                <button class="nav-btn" data-tab="assistant">
+                    <div class="assistant-nav-indicator"></div>
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                    <span>Terminal</span>
+                </button>
+                <button class="nav-btn" data-tab="console">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                    <span>Logs</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-spacer"></div>
+
+            <button class="sidebar-cta" onclick="openDecisionModal('food')">⚡ Launch Scan</button>
+
+            <div class="sidebar-footer">
+                <button class="sidebar-footer-link" onclick="showToast('Settings panel coming soon ⚙️')">
+                    <svg viewBox="0 0 24 24" width="17" height="17" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    <span>Settings</span>
+                </button>
+                <button class="sidebar-footer-link" onclick="showToast('Support: support@planetlens.eco 💬')">
+                    <svg viewBox="0 0 24 24" width="17" height="17" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    <span>Support</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- ---------------------------- CONTENT ---------------------------- -->
+        <div class="app-content">
+
+            <!-- TOPBAR -->
+            <header class="app-topbar">
+                <div class="topbar-left">
+                    <button class="mobile-menu-btn" onclick="document.querySelector('.app-sidebar').classList.toggle('open')" aria-label="Menu">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                    </button>
+                    <span class="topbar-stat">EcoPoints <b id="header-points">0</b></span>
+                    <span class="topbar-stat">Status: <span class="status-on" id="header-badge">Eco Seed</span></span>
+                </div>
+                <div class="topbar-right">
+                    <button class="topbar-icon-btn" id="btn-voice-toggle" title="Captain Planet voice" aria-label="Toggle voice">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+                    </button>
+                    <button class="topbar-icon-btn" onclick="showToast('No new alerts 🛰️')" aria-label="Notifications">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        <span class="notif-dot"></span>
+                    </button>
+                    <div class="topbar-user">
+                        <div class="topbar-user-info">
+                            <div class="u-name">Planeteer</div>
+                            <div class="u-role">Eco-Intelligence Analyst</div>
+                        </div>
+                        <div class="topbar-avatar"><span>🌱</span></div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- MAIN -->
+            <main class="app-main">
+
+                <!-- ===================== DASHBOARD (tab-lens) ===================== -->
+                <section class="tab-content active" id="tab-lens">
+                    <div class="page-head">
+                        <h1 class="page-title">Command <span class="accent">Center</span></h1>
+                        <p class="page-subtitle">Real-time biosphere equilibrium and AI decision copilot.</p>
+                    </div>
+
+                    <div class="dash-grid">
+                        <!-- Main column -->
+                        <div class="dash-main">
+                            <!-- Global Equilibrium hero -->
+                            <div class="card equilibrium-card glass">
+                                <div class="equilibrium-head">
+                                    <span class="equilibrium-title">GLOBAL EQUILIBRIUM</span>
+                                    <div style="display:flex; align-items:center; gap:0.85rem;">
+                                        <span class="badge" id="gaia-health-badge">Health: 0%</span>
+                                        <span class="equilibrium-live">LIVE SCAN</span>
+                                    </div>
+                                </div>
+                                <div id="dashboard-earth-slot">
+                                    <div class="earth-aura" id="earth-aura" style="position:absolute; pointer-events:none; z-index:0;"></div>
+                                </div>
+                                <div class="equilibrium-chips">
+                                    <span class="eq-chip"><span class="lbl">Global CO₂: </span><span class="val" id="dash-co2" style="color:var(--alert-crimson);">419 ppm</span></span>
+                                    <span class="eq-chip"><span class="lbl">Surface Temp: </span><span class="val" style="color:var(--accent-cyan);">+0.12°C</span></span>
+                                    <span class="eq-chip"><span class="lbl">Air Quality: </span><span class="val" style="color:var(--primary-light);">98 (Optimum)</span></span>
+                                </div>
+                            </div>
+
+                            <!-- AI Decision Lenses -->
+                            <div>
+                                <div class="section-label">
+                                    <span class="ic"><svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 3v18h18"></path><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path></svg></span>
+                                    AI Decision Lenses
+                                </div>
+                                <div class="lens-tiles">
+                                    <div class="lens-tile t-food" onclick="openDecisionModal('food')">
+                                        <div class="lens-tile-icon">🍴</div><span class="lens-tile-name">Food</span>
+                                    </div>
+                                    <div class="lens-tile t-commute" onclick="openDecisionModal('commute')">
+                                        <div class="lens-tile-icon">🚗</div><span class="lens-tile-name">Commute</span>
+                                    </div>
+                                    <div class="lens-tile t-shopping" onclick="openDecisionModal('shopping')">
+                                        <div class="lens-tile-icon">🛍️</div><span class="lens-tile-name">Shopping</span>
+                                    </div>
+                                    <div class="lens-tile t-waste" onclick="openDecisionModal('waste')">
+                                        <div class="lens-tile-icon">♻️</div><span class="lens-tile-name">Waste</span>
+                                    </div>
+                                    <div class="lens-tile t-energy" onclick="openDecisionModal('energy')">
+                                        <div class="lens-tile-icon">⚡</div><span class="lens-tile-name">Energy</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action row -->
+                            <div class="dash-action-row">
+                                <button type="button" class="btn btn-primary" onclick="openImpactReportModal()">📊 Generate Climate Impact Report</button>
+                                <button type="button" class="btn btn-secondary" id="btn-open-lifestyle" style="flex: 0.8;">🧬 My Lifestyle</button>
+                                <button type="button" class="btn btn-secondary" onclick="resetDemoState()" style="border-color: var(--alert-crimson); color: var(--alert-crimson); flex: 0.6;">⚠️ Reset Demo</button>
+                            </div>
+
+                            <!-- Color My World -->
+                            <div class="card personal-world-card glass">
+                                <div class="card-header" style="margin-bottom:0.75rem;">
+                                    <div>
+                                        <h2 style="font-size:1.15rem;">What world are you protecting?</h2>
+                                        <span class="input-subtext">Upload a photo of a plant, pet, place, person, or memory. Every eco-action brings your world back to color.</span>
+                                    </div>
+                                </div>
+                                <div class="personal-world-container" style="position:relative;">
+                                    <div id="world-upload-zone" class="world-upload-zone">
+                                        <input type="file" id="world-image-input" accept="image/*" style="display:none;">
+                                        <div class="upload-prompt" onclick="document.getElementById('world-image-input').click()">
+                                            <span class="upload-icon">📸</span>
+                                            <p class="upload-text">Click to upload your image</p>
+                                            <span class="upload-subtext">Your photo stays locally in your browser and is not uploaded to any server.</span>
+                                        </div>
+                                    </div>
+                                    <div id="world-image-frame" class="world-image-frame" style="display:none;">
+                                        <img id="world-img" src="" alt="The world I protect">
+                                        <canvas id="world-celebration-canvas" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:5;"></canvas>
+                                        <div class="color-progress-overlay">
+                                            <span id="color-progress-text">Grayscale (0% Restored)</span>
+                                        </div>
+                                        <button type="button" class="btn-clear-image" id="btn-clear-image" title="Reset Image">✕</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right rail -->
+                        <div class="dash-rail">
+                            <!-- Active Mission -->
+                            <div class="card mission-card glass">
+                                <div class="mission-top">
+                                    <span class="card-eyebrow">Active Mission</span>
+                                    <span class="mission-pct-top" id="mission-pct-top">0%</span>
+                                </div>
+                                <div class="mission-body">
+                                    <div class="mission-radial" id="mission-radial" style="--pct:0;"><span id="mission-radial-val">0%</span></div>
+                                    <div>
+                                        <div class="mission-goal-name">Monthly Goal</div>
+                                        <div class="mission-goal-sub">Save 25 kg CO₂e</div>
+                                    </div>
+                                </div>
+                                <div class="mission-bar-wrap">
+                                    <div class="progress-bar-bg">
+                                        <div class="progress-bar-fill" id="mission-progress-fill" style="width:0%; background:linear-gradient(90deg, var(--color-earth), var(--primary)); box-shadow:0 0 10px var(--primary-glow);"></div>
+                                    </div>
+                                    <div class="mission-bar-info">
+                                        <span id="mission-progress-text">0.0 / 25 kg CO₂e saved</span>
+                                        <span id="mission-percent-text">0% Complete</span>
+                                    </div>
+                                    <div id="mission-empty-state" style="margin-top:0.5rem;">Start with one small decision. Every ring brings your world back to color.</div>
+                                </div>
+                                <button class="btn btn-secondary btn-view-strategy" onclick="openImpactReportModal()">VIEW STRATEGY</button>
+                            </div>
+
+                            <!-- Planeteer Elements (rings) -->
+                            <div class="card elements-card glass">
+                                <h3 class="elements-title">Planeteer Elements</h3>
+                                <div class="elements-list">
+                                    <div class="ring-slot" id="ring-earth" data-element="earth">
+                                        <div class="ring-icon">🪨</div>
+                                        <div class="ring-info"><div class="ring-name">Earth</div><div class="ring-line"><i></i></div></div>
+                                        <span class="ring-status">DORMANT</span>
+                                    </div>
+                                    <div class="ring-slot" id="ring-fire" data-element="fire">
+                                        <div class="ring-icon">🔥</div>
+                                        <div class="ring-info"><div class="ring-name">Fire</div><div class="ring-line"><i></i></div></div>
+                                        <span class="ring-status">DORMANT</span>
+                                    </div>
+                                    <div class="ring-slot" id="ring-wind" data-element="wind">
+                                        <div class="ring-icon">💨</div>
+                                        <div class="ring-info"><div class="ring-name">Wind</div><div class="ring-line"><i></i></div></div>
+                                        <span class="ring-status">DORMANT</span>
+                                    </div>
+                                    <div class="ring-slot" id="ring-water" data-element="water">
+                                        <div class="ring-icon">💧</div>
+                                        <div class="ring-info"><div class="ring-name">Water</div><div class="ring-line"><i></i></div></div>
+                                        <span class="ring-status">DORMANT</span>
+                                    </div>
+                                    <div class="ring-slot" id="ring-heart" data-element="heart">
+                                        <div class="ring-icon">❤️</div>
+                                        <div class="ring-info"><div class="ring-name">Heart</div><div class="ring-line"><i></i></div></div>
+                                        <span class="ring-status">DORMANT</span>
+                                    </div>
+                                </div>
+                                <div class="summon-status-text" id="summon-alert">Elements active: 0/5 (Unleash Earth, Fire, Wind, Water, Heart)</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===================== ACTION LIBRARY (tab-library) ===================== -->
+                <section class="tab-content" id="tab-library">
+                    <div class="page-head">
+                        <h1 class="page-title">Action <span class="accent">Library</span></h1>
+                        <p class="page-subtitle">Harness the primordial elements to regenerate the planetary biome. Select an element to filter active missions.</p>
+                    </div>
+
+                    <div class="stats-overview-grid">
+                        <div class="card glass text-center" style="padding:1rem;">
+                            <span class="input-subtext">Today's Points</span>
+                            <h3 id="lib-stat-daily" style="color:var(--primary-light); font-size:1.5rem; margin-top:0.25rem; font-weight:700;">0</h3>
+                        </div>
+                        <div class="card glass text-center" style="padding:1rem;">
+                            <span class="input-subtext">Weekly Points</span>
+                            <h3 id="lib-stat-weekly" style="color:var(--color-wind); font-size:1.5rem; margin-top:0.25rem; font-weight:700;">0</h3>
+                        </div>
+                        <div class="card glass text-center" style="padding:1rem;">
+                            <span class="input-subtext">Monthly Points</span>
+                            <h3 id="lib-stat-monthly" style="color:var(--color-earth); font-size:1.5rem; margin-top:0.25rem; font-weight:700;">0</h3>
+                        </div>
+                    </div>
+
+                    <div class="card glass info-card-action-types">
+                        <p style="margin:0; font-size:0.85rem; color:var(--text-soft);">
+                            ℹ️ <strong>Action Types Guide:</strong> One-time actions are single eco-actions. Habit actions are repeatable daily or weekly. Long-term actions create lasting impact. Completed tiles gain a permanent element glow.
+                        </p>
+                    </div>
+
+                    <div class="action-library-tabs">
+                        <button type="button" class="btn btn-secondary btn-sm lib-tab-btn active" onclick="filterLibraryActions('all')" id="lib-tab-all">All</button>
+                        <button type="button" class="btn btn-secondary btn-sm lib-tab-btn" onclick="filterLibraryActions('earth')" id="lib-tab-earth">🪨 Earth</button>
+                        <button type="button" class="btn btn-secondary btn-sm lib-tab-btn" onclick="filterLibraryActions('fire')" id="lib-tab-fire">🔥 Fire</button>
+                        <button type="button" class="btn btn-secondary btn-sm lib-tab-btn" onclick="filterLibraryActions('wind')" id="lib-tab-wind">💨 Wind</button>
+                        <button type="button" class="btn btn-secondary btn-sm lib-tab-btn" onclick="filterLibraryActions('water')" id="lib-tab-water">💧 Water</button>
+                        <button type="button" class="btn btn-secondary btn-sm lib-tab-btn" onclick="filterLibraryActions('heart')" id="lib-tab-heart">❤️ Heart</button>
+                    </div>
+
+                    <div class="actions-library-grid" id="actions-library-grid"></div>
+                </section>
+
+                <!-- ===================== COMMUNITY (tab-community) ===================== -->
+                <section class="tab-content" id="tab-community">
+                    <div class="page-head">
+                        <h1 class="page-title">Community <span class="accent">Wins</span></h1>
+                        <p class="page-subtitle">Recent activity from Planeteers around the world protecting the biosphere.</p>
+                    </div>
+                    <div class="section-title-bar">
+                        <h3>Live Activity Feed</h3>
+                        <span class="badge live">Live Feed</span>
+                    </div>
+                    <div class="card glass community-feed-card">
+                        <ul id="community-wins-list"></ul>
+                    </div>
+                </section>
+
+                <!-- ===================== TERMINAL (tab-assistant) ===================== -->
+                <section class="tab-content" id="tab-assistant">
+                    <div class="page-head">
+                        <h1 class="page-title">Mother Earth <span class="accent">Terminal</span></h1>
+                        <p class="page-subtitle">Telepathic link to Gaia — diagnostics, simulations, and Planeteer trivia.</p>
+                    </div>
+
+                    <div class="terminal-grid">
+                        <!-- Chat -->
+                        <div class="card assistant-layout glass">
+                            <div class="assistant-header">
+                                <div class="assistant-avatar">
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--primary)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>
+                                </div>
+                                <div class="assistant-info">
+                                    <h4>Mother Earth Bot</h4>
+                                    <span class="assistant-status">Active Neural Link Online</span>
+                                </div>
+                                <button class="btn btn-secondary btn-sm" id="btn-clear-chat">Clear History</button>
+                            </div>
+
+                            <div class="chat-container-scroll" id="chat-messages"></div>
+
+                            <div class="chat-typing" id="chat-typing-indicator" style="display:none;">
+                                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                            </div>
+
+                            <div class="chat-suggestion-chips" id="suggestion-chips">
+                                <button class="chip" onclick="sendSuggestion('Play Planeteer Trivia Game 🧠')">Play Planeteer Trivia 🧠</button>
+                                <button class="chip" onclick="sendSuggestion('Run Mother Earth footprint diagnosis 📊')">Run footprint diagnosis 📊</button>
+                                <button class="chip" onclick="sendSuggestion('How to summon Captain Planet? 🦸‍♂️')">Summon Captain Planet? 🦸‍♂️</button>
+                                <button class="chip" onclick="sendSuggestion('Give me quick eco tips 💡')">Quick eco tips 💡</button>
+                            </div>
+
+                            <form class="chat-input-bar" id="chat-form">
+                                <input type="text" id="chat-input" placeholder="Command Mother Earth Bot..." autocomplete="off">
+                                <button type="submit" class="btn btn-primary" id="btn-send-message">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Right rail -->
+                        <div class="dash-rail">
+                            <div class="card rail-panel glass">
+                                <h4>Carbon Footprint <span style="color:var(--alert-crimson);">⚠</span></h4>
+                                <div class="footprint-radial" style="--pct:75;">
+                                    <div class="footprint-radial-val"><b>75%</b><span>LOAD LEVEL</span></div>
+                                </div>
+                            </div>
+                            <div class="card rail-panel glass">
+                                <h4>Net-Zero Simulation <span class="badge live" style="font-size:0.6rem;">LIVE</span></h4>
+                                <div class="sim-projection">Real-time projection ▲</div>
+                                <div class="sim-stat">
+                                    <div class="bar" style="background:var(--primary);"></div>
+                                    <div class="meta"><div class="k">Mangrove Sequestration</div><div class="v" style="color:var(--primary-light);">840.4 kg/yr</div></div>
+                                </div>
+                                <div class="sim-stat">
+                                    <div class="bar" style="background:var(--accent-cyan);"></div>
+                                    <div class="meta"><div class="k">Oceanic Absorption</div><div class="v" style="color:var(--accent-cyan);">212.1 kg/yr</div></div>
+                                </div>
+                                <button class="btn btn-secondary" style="width:100%; margin-top:0.5rem;" onclick="showToast('Re-running net-zero simulation… 🔄')">⟳ Rerun Simulation</button>
+                            </div>
+                            <div class="card rail-panel glass" style="display:flex; align-items:center; gap:0.85rem;">
+                                <div class="region-dot" style="background:rgba(78,222,163,0.12);">🛰️</div>
+                                <div style="flex:1;">
+                                    <div style="font-weight:700; font-size:0.88rem;">Atmospheric Sync</div>
+                                    <div class="input-subtext">Last synced: just now</div>
+                                </div>
+                                <span class="badge" style="color:var(--primary-light);">STABLE</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===================== LOGS (tab-console) ===================== -->
+                <section class="tab-content" id="tab-console">
+                    <div class="page-head">
+                        <h1 class="page-title">System <span class="accent">Logs</span></h1>
+                        <p class="page-subtitle">Live planetary mesh telemetry and your personal carbon analytics.</p>
+                    </div>
+
+                    <div class="logs-filters">
+                        <span class="flt-label">FILTERS:</span>
+                        <button class="log-filter-btn active" data-level="all">ALL</button>
+                        <button class="log-filter-btn" data-level="info">INFO</button>
+                        <button class="log-filter-btn" data-level="warn">WARNING</button>
+                        <button class="log-filter-btn" data-level="alert">ALERT</button>
+                        <button class="log-filter-btn" data-level="rest">RESTORE</button>
+                    </div>
+
+                    <div class="logs-grid">
+                        <!-- System activity log -->
+                        <div class="card log-console-card glass">
+                            <div class="log-console-head">
+                                <h3>{ } System Activity Log</h3>
+                                <div class="log-console-meta">
+                                    <span class="badge live">Live Stream</span>
+                                    <span>Total Entries: 142,094</span>
+                                </div>
+                            </div>
+                            <div class="log-stream" id="log-stream"></div>
+                        </div>
+
+                        <!-- Analytics rail -->
+                        <div class="dash-rail">
+                            <div class="card rail-panel glass">
+                                <h4>Log Analytics</h4>
+                                <div class="analytics-peak">
+                                    <span class="k">Activity Peak</span>
+                                    <span class="v">14:00 – 15:00 UTC</span>
+                                </div>
+                            </div>
+                            <div class="card rail-panel glass">
+                                <h4>Regional Impact Stream</h4>
+                                <div id="region-stream"></div>
+                                <button class="btn btn-secondary btn-sm" style="width:100%; margin-top:0.75rem;" onclick="switchTab('community')">View Global Activity →</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Collapsible Reflection Console (full carbon analytics — preserved) -->
+                    <div class="card glass reflection-header-card" style="margin-top:1.5rem;" onclick="toggleReflectionConsole()">
+                        <div class="card-header" style="margin:0;">
+                            <div>
+                                <h2 style="margin:0; font-size:1.2rem;">🔮 Reflection Console</h2>
+                                <span class="input-subtext">Click to inspect carbon statistics, regional calculators, and historical logs</span>
+                            </div>
+                            <span id="reflection-toggle-arrow" style="font-size:1.25rem; transition:transform 0.3s ease;">▼</span>
+                        </div>
+                    </div>
+
+                    <div id="reflection-console-content" style="display:none;">
+                        <div class="dashboard-grid">
+                            <!-- Carbon footprint summary -->
+                            <div class="card glass">
+                                <div class="card-header">
+                                    <h2>Your Carbon Footprint Console</h2>
+                                    <div class="region-selector-container">
+                                        <label for="region-select">Region:</label>
+                                        <select id="region-select">
+                                            <option value="us">United States (High)</option>
+                                            <option value="eu">Europe (Medium)</option>
+                                            <option value="in">India (Low)</option>
+                                            <option value="global" selected>Global Average</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="carbon-hero-content">
+                                    <div class="main-metric">
+                                        <span class="metric-number" id="dashboard-total-co2">0.0</span>
+                                        <div class="metric-unit"><span class="unit-main">tons CO2e</span><span class="unit-sub">per year</span></div>
+                                    </div>
+                                    <div class="comparison-bar-container">
+                                        <div class="comparison-info">
+                                            <span>Comparison to Region Average</span>
+                                            <span class="comparison-percent" id="comparison-text">Evaluating...</span>
+                                        </div>
+                                        <div class="progress-bar-bg" style="height:12px;">
+                                            <div class="progress-bar-fill" id="comparison-fill" style="width:0%;"></div>
+                                            <div class="progress-bar-marker" id="target-marker" style="left:60%;"><span class="marker-label">Target (60%)</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dashboard-stats-grid">
+                                    <div class="stat-box"><span class="stat-label">Active Elements</span><span class="stat-value" id="dashboard-active-challenges">0</span></div>
+                                    <div class="stat-box"><span class="stat-label">EcoPoints</span><span class="stat-value" id="dashboard-points">0</span></div>
+                                    <div class="stat-box"><span class="stat-label">Offset Reduction</span><span class="stat-value" id="dashboard-reduction">0 kg</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Emissions breakdown -->
+                            <div class="card glass">
+                                <div class="card-header"><h3>Emissions Breakdown</h3></div>
+                                <div class="chart-container">
+                                    <div class="chart-wrapper">
+                                        <svg class="doughnut-chart" id="svg-doughnut" viewBox="0 0 100 100">
+                                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="var(--surface-high)" stroke-width="12"></circle>
+                                        </svg>
+                                        <div class="chart-overlay">
+                                            <span class="overlay-value" id="chart-overlay-value">0%</span>
+                                            <span class="overlay-label">Tracked</span>
+                                        </div>
+                                    </div>
+                                    <div class="chart-legend" id="chart-legend"></div>
+                                </div>
+                            </div>
+
+                            <!-- Historical trend -->
+                            <div class="card glass">
+                                <div class="card-header"><h3>Historical Trend</h3><span class="input-subtext">Last 4 Weeks (tons CO2e)</span></div>
+                                <div class="trend-chart-wrapper"><div class="trend-bar-chart" id="trend-bar-chart"></div></div>
+                            </div>
+
+                            <!-- Net-zero offset -->
+                            <div class="card glass">
+                                <div class="card-header"><h3>Net-Zero Offset</h3><span class="badge" id="offset-points-badge">+0 Points</span></div>
+                                <div class="offset-content">
+                                    <div class="offset-stat">
+                                        <span class="offset-number" id="offset-trees">0</span>
+                                        <span class="offset-label">Mature trees required to offset your annual footprint</span>
+                                    </div>
+                                    <div class="divider"></div>
+                                    <div class="offset-simulator">
+                                        <label for="offset-simulate-slider">Simulate Carbon Offsetting:</label>
+                                        <div class="range-slider-wrapper">
+                                            <input type="range" id="offset-simulate-slider" min="0" max="100" value="0" class="input-slider">
+                                            <div class="slider-values"><span class="value-display" id="offset-simulate-val">0% offsetted</span></div>
+                                        </div>
+                                        <span class="input-subtext">Simulates planting trees or funding clean energy offsets.</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Smart insights -->
+                            <div class="card glass grid-col-2">
+                                <div class="card-header">
+                                    <h3 class="flex-center">
+                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--primary)" stroke-width="2" class="margin-right-sm"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 14 18.469V19a2 2 0 0 1-2 2h0a2 2 0 0 1-2-2v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                                        EcoBot's Smart Insights
+                                    </h3>
+                                    <button class="btn btn-secondary btn-sm" id="btn-refresh-insights">Recalculate</button>
+                                </div>
+                                <div class="insights-container" id="insights-panel"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden inputs preserved for carbon calculation backward compatibility -->
+                    <div style="display:none;">
+                        <input type="checkbox" id="owns-vehicle" checked>
+                        <select id="vehicle-type"><option value="sedan">sedan</option></select>
+                        <select id="fuel-type"><option value="petrol">petrol</option></select>
+                        <input type="range" id="car-distance" value="100">
+                        <input type="range" id="public-transit" value="2">
+                        <input type="number" id="flights" value="1">
+                        <input type="number" id="electricity" value="80">
+                        <input type="number" id="gas" value="40">
+                        <input type="range" id="clean-energy" value="0">
+                        <input type="number" id="house-members" value="2">
+                        <select id="diet-type"><option value="medium-meat">medium-meat</option></select>
+                        <input type="range" id="food-waste" value="20">
+                        <input type="number" id="clothing-purchases" value="2">
+                        <input type="number" id="electronics-purchases" value="1">
+                        <input type="checkbox" id="recycle-paper" checked>
+                        <input type="checkbox" id="recycle-plastic" checked>
+                        <input type="checkbox" id="recycle-glass" checked>
+                        <input type="checkbox" id="recycle-metal" checked>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- ============================ MODALS ============================ -->
+    <div id="decision-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-card glass">
+            <button class="btn-close-modal" onclick="closeDecisionModal()">&times;</button>
+            <div id="modal-lens-content"></div>
+        </div>
+    </div>
+
+    <div id="verify-modal" class="modal-overlay style-verify-overlay" style="display:none;">
         <div class="modal-card glass verify-card-layout">
             <button class="btn-close-modal" onclick="closeVerifyModal()">&times;</button>
             <h3>Verify Your Action</h3>
             <p class="section-desc">Submit device proofs to confirm your carbon-cutting choice and activate the Planeteer Ring!</p>
-            
-            <div id="verify-interface-container">
-                <!-- Injected dynamically: Video stream, GPS read, or Step Motion widget -->
-            </div>
-            
+            <div id="verify-interface-container"></div>
             <div class="verify-modal-actions">
                 <button class="btn btn-primary" id="btn-confirm-verify">Submit Verification Proof</button>
                 <button class="btn btn-secondary" onclick="closeVerifyModal()">Cancel</button>
@@ -544,8 +652,28 @@
         </div>
     </div>
 
-    <!-- UI Overlay for interactive quiz triggers -->
-    <div id="toast-notification" class="toast-container" style="display: none;">
+    <div id="impact-report-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-card glass">
+            <button type="button" class="btn-close-modal" onclick="closeImpactReportModal()">&times;</button>
+            <h3>📊 Climate Impact Report</h3>
+            <p class="section-desc">Your consolidated climate wins and restoration summary:</p>
+            <div class="report-output-box" id="report-output-box" style="background:rgba(0,0,0,0.4); border:1px solid var(--glass-stroke); border-radius:12px; padding:1.25rem; font-family:monospace; font-size:0.85rem; line-height:1.5; color:var(--text-main); white-space:pre-wrap; margin-top:1rem; max-height:250px; overflow-y:auto;"></div>
+            <div style="margin-top:1rem; border-top:1px solid var(--glass-stroke); padding-top:1rem;">
+                <h4 style="margin-bottom:0.5rem; font-size:0.9rem;">📢 Share Your Progress:</h4>
+                <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="shareEcoActionText('report')" style="border-color:var(--color-wind); color:var(--color-wind);">🔗 Share Climate Win</button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="generateLinkedInPost()" style="border-color:var(--color-heart); color:var(--color-heart);">💼 Generate LinkedIn Post</button>
+                </div>
+            </div>
+            <div class="verify-modal-actions" style="justify-content:flex-end;">
+                <button type="button" class="btn btn-primary" onclick="copyReportToClipboard()">Copy Report Text</button>
+                <button type="button" class="btn btn-secondary" onclick="downloadReportAsFile()">Download Report (.txt)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast-notification" class="toast-container" style="display:none;">
         <span class="toast-msg" id="toast-message">Challenge logged! +10 Points</span>
     </div>
 
