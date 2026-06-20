@@ -88,3 +88,36 @@ test('getYearWeekString returns a YYYY-Wn key', () => {
     const key = core.getYearWeekString(new Date('2026-06-21T00:00:00Z'));
     assert.match(key, /^\d{4}-W\d{1,2}$/);
 });
+
+test('offsetPoints: half the offset percent, rounded and clamped', () => {
+    assert.equal(core.offsetPoints(0), 0);
+    assert.equal(core.offsetPoints(50), 25);
+    assert.equal(core.offsetPoints(100), 50);
+    assert.equal(core.offsetPoints(150), 50);
+    assert.equal(core.offsetPoints(-10), 0);
+});
+
+test('comparisonPct: footprint relative to regional average', () => {
+    assert.equal(core.comparisonPct(4.8, 4.8), 100);
+    assert.equal(core.comparisonPct(2.4, 4.8), 50);
+    assert.equal(core.comparisonPct(9.6, 4.8), 200);
+    assert.equal(core.comparisonPct(5, 0), 0);
+});
+
+test('treesToOffset: scales with footprint and never negative', () => {
+    assert.equal(core.treesToOffset(0), 0);
+    assert.ok(core.treesToOffset(10) > core.treesToOffset(1));
+    assert.ok(core.treesToOffset(4.8) > 0);
+});
+
+test('computeFootprint: clean energy percentage lowers electricity emissions', () => {
+    const dirty = { electricity: 600, cleanPct: 0, members: 1, diet: 'vegan', vehicle: 'none', fuel: 'none' };
+    const clean = { ...dirty, cleanPct: 100 };
+    assert.ok(core.computeFootprint(dirty) > core.computeFootprint(clean));
+});
+
+test('computeFootprint: larger household splits home energy per person', () => {
+    const solo = { electricity: 600, members: 1, diet: 'vegan', vehicle: 'none', fuel: 'none' };
+    const shared = { ...solo, members: 4 };
+    assert.ok(core.computeFootprint(solo) > core.computeFootprint(shared));
+});

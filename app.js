@@ -221,8 +221,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-clear-chat').addEventListener('click', clearChatHistory);
     document.getElementById('chat-form').addEventListener('submit', handleChatSubmit);
     document.getElementById('btn-refresh-insights').addEventListener('click', () => {
-        generateInsights();
-        showToast("Mother Earth Terminal Insights updated!");
+        if (window.refreshInsightsSmart) {
+            window.refreshInsightsSmart(true);
+        } else {
+            generateInsights();
+            showToast("Mother Earth Terminal Insights updated!");
+        }
     });
 });
 
@@ -3501,6 +3505,72 @@ void main() {
         buildLifestyleModal();
         const m = document.getElementById('lifestyle-modal');
         if (m) m.style.display = 'flex';
+    }
+
+    /* ---------------- Gemini-powered personalized insights ---------------- */
+    let geminiLoadedOnce = false;
+    function buildCarbonProfile() {
+        const e = (typeof calculateEmissions === 'function') ? calculateEmissions() : {};
+        return {
+            region: state.region || 'global',
+            totalTons: e.totalProjected || 0,
+            breakdown: { transport: e.transport || 0, energy: e.energy || 0, diet: e.diet || 0, waste: e.waste || 0 },
+            unlockedRings: state.unlockedRings || [],
+            points: state.points || 0
+        };
+    }
+    function renderGeminiInsights(data) {
+        const panel = document.getElementById('insights-panel');
+        if (!panel) return;
+        const isGemini = data.source === 'gemini';
+        const badge = isGemini
+            ? '<span class="badge" style="color:var(--accent-violet);border-color:rgba(167,139,250,0.4)">✨ Powered by Gemini 1.5 Flash</span>'
+            : '<span class="badge" style="color:var(--accent-orange);border-color:rgba(245,158,11,0.4)">⚙️ Rule-based fallback</span>';
+        const cards = data.insights.map(ins => `
+            <div class="insight-card">
+                <div class="insight-icon" style="font-size:1.4rem">🌍</div>
+                <div class="insight-details">
+                    <h4>${escapeHTML(ins.category)}</h4>
+                    <p>${escapeHTML(ins.suggestion)}</p>
+                </div>
+                <span class="insight-impact">−${Math.round(ins.estimated_saving_kg)} kg/yr</span>
+            </div>`).join('');
+        panel.innerHTML = `<div style="display:flex;justify-content:flex-end;margin-bottom:0.6rem">${badge}</div>${cards}`;
+    }
+    async function refreshInsightsSmart(announce) {
+        const panel = document.getElementById('insights-panel');
+        if (!panel) return;
+        panel.innerHTML = '<div class="insight-card" style="opacity:0.7"><div class="insight-icon">✨</div><div class="insight-details"><h4>Analyzing your footprint…</h4><p>Gemini is generating personalized reduction strategies.</p></div></div>';
+        try {
+            const res = await fetch('/api/insights', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(buildCarbonProfile())
+            });
+            const data = await res.json();
+            if (!data || !Array.isArray(data.insights) || !data.insights.length) throw new Error('empty');
+            renderGeminiInsights(data);
+            geminiLoadedOnce = true;
+            if (announce && typeof showToast === 'function') {
+                showToast(data.source === 'gemini' ? 'Gemini insights updated ✨' : 'Insights updated (offline mode) ⚙️');
+            }
+        } catch (e) {
+            if (typeof generateInsights === 'function') generateInsights(); // graceful local fallback
+        }
+    }
+    window.refreshInsightsSmart = refreshInsightsSmart;
+    // Fetch Gemini insights the first time the Reflection Console is opened.
+    if (typeof toggleReflectionConsole === 'function') {
+        const _origToggle = toggleReflectionConsole;
+        // eslint-disable-next-line no-global-assign
+        toggleReflectionConsole = function () {
+            const r = _origToggle.apply(this, arguments);
+            const content = document.getElementById('reflection-console-content');
+            if (!geminiLoadedOnce && content && content.style.display !== 'none') {
+                refreshInsightsSmart(false);
+            }
+            return r;
+        };
     }
 
     /* ---------------- Initial paint (DOM ready: app.js loads at end of <body>) ---------------- */

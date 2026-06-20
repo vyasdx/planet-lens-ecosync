@@ -80,6 +80,22 @@
         return Math.min(100, n * 20);
     }
 
+    /** EcoPoints awarded for a given carbon-offset percentage. */
+    function offsetPoints(offsetAmount) {
+        return Math.round(Math.max(0, Math.min(100, offsetAmount || 0)) / 2);
+    }
+
+    /** Your footprint as a percentage of the regional average (lower is better). */
+    function comparisonPct(footprint, regionAvg) {
+        if (!regionAvg) return 0;
+        return Math.round((footprint / regionAvg) * 100);
+    }
+
+    /** Mature trees needed to offset an annual footprint (~21 kg CO2/tree/yr). */
+    function treesToOffset(tonnes) {
+        return Math.max(0, Math.round((tonnes * 1000) / 21));
+    }
+
     /** Escape user-supplied text before rendering (XSS-safe). */
     function escapeHTML(str) {
         return String(str).replace(/[&<>'"]/g, tag => ({
@@ -100,6 +116,7 @@
     return {
         REGIONAL_BASELINES, RING_WEEKLY_KG, RANKS,
         regionalBaseline, rankForPoints, computeFootprint,
-        projectedFootprint, planetHealth, escapeHTML, getYearWeekString
+        projectedFootprint, planetHealth, offsetPoints, comparisonPct,
+        treesToOffset, escapeHTML, getYearWeekString
     };
 });
