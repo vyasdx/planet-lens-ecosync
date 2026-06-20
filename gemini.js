@@ -1,6 +1,6 @@
 /* =====================================================================
    Planet Lens — Gemini insight engine (server-side)
-   Calls Google Gemini 1.5 Flash to turn a user's carbon profile into
+   Calls Google Gemini 2.5 Flash-Lite to turn a user's carbon profile into
    personalized, quantified reduction suggestions. Engineered for
    production reliability: a strict JSON response schema, low temperature
    for factual output, an 8s timeout, and a DETERMINISTIC fallback engine

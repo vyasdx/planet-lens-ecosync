@@ -3524,7 +3524,7 @@ void main() {
         if (!panel) return;
         const isGemini = data.source === 'gemini';
         const badge = isGemini
-            ? '<span class="badge" style="color:var(--accent-violet);border-color:rgba(167,139,250,0.4)">✨ Powered by Gemini 1.5 Flash</span>'
+            ? '<span class="badge" style="color:var(--accent-violet);border-color:rgba(167,139,250,0.4)">✨ Powered by Gemini 2.5 Flash-Lite</span>'
             : '<span class="badge" style="color:var(--accent-orange);border-color:rgba(245,158,11,0.4)">⚙️ Rule-based fallback</span>';
         const cards = data.insights.map(ins => `
             <div class="insight-card">
